@@ -1,38 +1,38 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import { createContext, useContext, useState, type ReactNode } from 'react';
 import type { User } from '../types';
 import { login as apiLogin } from '../api/auth';
 
 interface AuthContextValue {
   user: User | null;
   accessToken: string | null;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string, rememberMe?: boolean) => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+function getStoredToken() {
+  return localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [accessToken, setAccessToken] = useState<string | null>(
-    localStorage.getItem('access_token'),
-  );
+  const [accessToken, setAccessToken] = useState<string | null>(getStoredToken);
 
-  useEffect(() => {
-    const stored = localStorage.getItem('access_token');
-    if (stored) setAccessToken(stored);
-  }, []);
-
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string, rememberMe = true) => {
     const { data } = await apiLogin(email, password);
-    localStorage.setItem('access_token', data.access);
-    localStorage.setItem('refresh_token', data.refresh);
+    const storage = rememberMe ? localStorage : sessionStorage;
+    storage.setItem('access_token', data.access);
+    storage.setItem('refresh_token', data.refresh);
     setAccessToken(data.access);
   };
 
   const logout = () => {
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
+    sessionStorage.removeItem('access_token');
+    sessionStorage.removeItem('refresh_token');
     setAccessToken(null);
     setUser(null);
   };

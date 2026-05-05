@@ -73,7 +73,7 @@ export default function Navbar() {
     <nav className="fixed top-0 left-0 right-0 z-50 bg-black">
       {/* Search overlay */}
       {searchOpen && (
-        <div className="absolute inset-0 bg-black flex items-center px-4 sm:px-6 lg:px-8">
+        <div className="absolute inset-0 z-10 bg-black flex items-center px-4 sm:px-6 lg:px-8">
           <form onSubmit={handleSearch} className="flex items-center w-full max-w-3xl mx-auto gap-4">
             <Search size={20} className="text-[#C9A84C] flex-shrink-0" />
             <input
