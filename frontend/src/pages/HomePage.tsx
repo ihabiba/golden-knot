@@ -1,28 +1,29 @@
 import { Link } from 'react-router-dom';
 import { ArrowRight, Layers, Grid3X3, Sparkles, Image, BookOpen, AlignLeft, Shield, Globe, Award } from 'lucide-react';
+import type { Product } from '../types';
 import ProductCard from '../components/ProductCard';
 import CategoryCard from '../components/CategoryCard';
 
 // ─── Mock Data ────────────────────────────────────────────────────────────────
 
 const CATEGORIES = [
-  { id: 1, name: 'Hand-Knotted Rugs', count: 142, icon: Grid3X3, slug: 'rugs', accentColor: '#C9A84C' },
-  { id: 2, name: 'Kilim Rugs', count: 89, icon: Layers, slug: 'kilims', accentColor: '#8B2525' },
-  { id: 3, name: 'Cushion Covers', count: 213, icon: Sparkles, slug: 'cushions', accentColor: '#1C3A5E' },
+  { id: 1, name: 'Hand-Knotted Rugs', count: 142, icon: Grid3X3, slug: 'hand-knotted-rugs', accentColor: '#C9A84C' },
+  { id: 2, name: 'Kilim Rugs', count: 89, icon: Layers, slug: 'kilim-rugs', accentColor: '#8B2525' },
+  { id: 3, name: 'Cushion Covers', count: 213, icon: Sparkles, slug: 'cushion-covers', accentColor: '#1C3A5E' },
   { id: 4, name: 'Wall Hangings', count: 67, icon: Image, slug: 'wall-hangings', accentColor: '#2D4A22' },
   { id: 5, name: 'Prayer Rugs', count: 95, icon: BookOpen, slug: 'prayer-rugs', accentColor: '#4A1942' },
   { id: 6, name: 'Table Runners', count: 48, icon: AlignLeft, slug: 'table-runners', accentColor: '#8B4A2A' },
 ];
 
-const PRODUCTS = [
-  { id: 1, name: 'Hand-Knotted Wool Carpet', seller: 'Fatima Rugs', price: 299, rating: 4.8, reviews: 124, category: 'Rugs', colors: ['#8B2525', '#C9A84C', '#1C3A5E'], slug: 'hand-knotted-wool-carpet' },
-  { id: 2, name: 'Tribal Kilim Runner', seller: 'Kabul Weavers Co.', price: 189, rating: 4.6, reviews: 87, category: 'Kilims', colors: ['#2D4A22', '#C9A84C', '#8B2525'], slug: 'tribal-kilim-runner' },
-  { id: 3, name: 'Hand-Embroidered Cushion Cover', seller: 'Herat Crafts', price: 45, rating: 4.9, reviews: 203, category: 'Cushions', colors: ['#1C3A5E', '#C9A84C', '#F5F0E8'], slug: 'hand-embroidered-cushion-cover' },
-  { id: 4, name: 'Bokhara Wool Prayer Rug', seller: 'Mazari Textiles', price: 450, rating: 4.7, reviews: 56, category: 'Rugs', colors: ['#8B2525', '#1C1C1C', '#C9A84C'], slug: 'bokhara-wool-prayer-rug' },
-  { id: 5, name: 'Silk & Wool Wall Hanging', seller: 'Kandahar Arts', price: 220, rating: 4.5, reviews: 41, category: 'Wall Hangings', colors: ['#4A1942', '#C9A84C', '#E8D5A3'], slug: 'silk-wool-wall-hanging' },
-  { id: 6, name: 'Geometric Flat-Weave Area Rug', seller: 'Fatima Rugs', price: 380, rating: 4.8, reviews: 92, category: 'Rugs', colors: ['#1C3A5E', '#8B2525', '#C9A84C'], slug: 'geometric-flat-weave-rug' },
-  { id: 7, name: 'Vintage Kilim Cushion Set', seller: 'Herat Crafts', price: 65, rating: 4.7, reviews: 118, category: 'Cushions', colors: ['#8B4A2A', '#C9A84C', '#2D4A22'], slug: 'vintage-kilim-cushion-set' },
-  { id: 8, name: 'Hand-Loomed Table Runner', seller: 'Kabul Weavers Co.', price: 95, rating: 4.6, reviews: 74, category: 'Table Runners', colors: ['#C9A84C', '#1C1C1C', '#8B2525'], slug: 'hand-loomed-table-runner' },
+const PRODUCTS: Product[] = [
+  { id: 1, seller: 1, seller_name: 'Fatima Rugs', category: 1, category_name: 'Hand-Knotted Rugs', category_slug: 'hand-knotted-rugs', name: 'Hand-Knotted Wool Carpet', slug: 'hand-knotted-wool-carpet', description: '', price: '299.00', stock: 3, is_active: true, is_approved: true, location: 'Kabul', images: [], avg_rating: 4.8, review_count: 124, created_at: '', updated_at: '' },
+  { id: 2, seller: 2, seller_name: 'Kabul Weavers Co.', category: 2, category_name: 'Kilim Rugs', category_slug: 'kilim-rugs', name: 'Tribal Kilim Runner', slug: 'flat-weave-tribal-kilim-runner', description: '', price: '189.00', stock: 8, is_active: true, is_approved: true, location: 'Kabul', images: [], avg_rating: 4.6, review_count: 87, created_at: '', updated_at: '' },
+  { id: 3, seller: 3, seller_name: 'Herat Textile Arts', category: 3, category_name: 'Cushion Covers', category_slug: 'cushion-covers', name: 'Hand-Embroidered Cushion Cover', slug: 'hand-embroidered-silk-cushion-cover', description: '', price: '45.00', stock: 20, is_active: true, is_approved: true, location: 'Herat', images: [], avg_rating: 4.9, review_count: 203, created_at: '', updated_at: '' },
+  { id: 4, seller: 1, seller_name: 'Fatima Rugs', category: 5, category_name: 'Prayer Rugs', category_slug: 'prayer-rugs', name: 'Bokhara Wool Prayer Rug', slug: 'bokhara-wool-prayer-mat', description: '', price: '450.00', stock: 2, is_active: true, is_approved: true, location: 'Kabul', images: [], avg_rating: 4.7, review_count: 56, created_at: '', updated_at: '' },
+  { id: 5, seller: 3, seller_name: 'Herat Textile Arts', category: 4, category_name: 'Wall Hangings', category_slug: 'wall-hangings', name: 'Silk & Wool Wall Hanging', slug: 'hazara-embroidered-silk-panel', description: '', price: '220.00', stock: 4, is_active: true, is_approved: true, location: 'Herat', images: [], avg_rating: 4.5, review_count: 41, created_at: '', updated_at: '' },
+  { id: 6, seller: 2, seller_name: 'Kabul Weave House', category: 1, category_name: 'Hand-Knotted Rugs', category_slug: 'hand-knotted-rugs', name: 'Geometric Flat-Weave Area Rug', slug: 'chobi-ziegler-hand-knotted-rug', description: '', price: '380.00', stock: 4, is_active: true, is_approved: true, location: 'Kabul', images: [], avg_rating: 4.8, review_count: 92, created_at: '', updated_at: '' },
+  { id: 7, seller: 3, seller_name: 'Herat Textile Arts', category: 3, category_name: 'Cushion Covers', category_slug: 'cushion-covers', name: 'Vintage Kilim Cushion Set', slug: 'kilim-patchwork-cushion-set-2-pieces', description: '', price: '65.00', stock: 12, is_active: true, is_approved: true, location: 'Herat', images: [], avg_rating: 4.7, review_count: 118, created_at: '', updated_at: '' },
+  { id: 8, seller: 2, seller_name: 'Kabul Weave House', category: 6, category_name: 'Table Runners', category_slug: 'table-runners', name: 'Hand-Loomed Table Runner', slug: 'ikat-hand-loomed-table-runner', description: '', price: '95.00', stock: 14, is_active: true, is_approved: true, location: 'Kabul', images: [], avg_rating: 4.6, review_count: 74, created_at: '', updated_at: '' },
 ];
 
 const STATS = [
@@ -129,7 +130,7 @@ export default function HomePage() {
 
             {/* Right — Textile mosaic */}
             <div className="order-1 lg:order-2 flex justify-center lg:justify-end">
-              <div className="relative w-80 h-80 sm:w-96 sm:h-96 lg:w-[420px] lg:h-[420px]">
+              <div className="relative w-80 h-80 sm:w-96 sm:h-96 lg:w-105 lg:h-105">
                 {/* Outer ring */}
                 <div className="absolute inset-0 rounded-full border border-[#C9A84C]/20" />
                 <div className="absolute inset-4 rounded-full border border-[#C9A84C]/10" />
@@ -167,7 +168,7 @@ export default function HomePage() {
         {/* Scroll indicator */}
         <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 opacity-40">
           <span className="text-[10px] text-white uppercase tracking-[0.2em]">Scroll</span>
-          <div className="w-px h-10 bg-gradient-to-b from-white to-transparent" />
+          <div className="w-px h-10 bg-linear-to-b from-white to-transparent" />
         </div>
       </section>
 
@@ -184,7 +185,7 @@ export default function HomePage() {
           </div>
           <Link
             to="/products"
-            className="text-sm font-medium text-[#C9A84C] hover:text-[#A8872F] flex items-center gap-1.5 transition-colors group flex-shrink-0"
+            className="text-sm font-medium text-[#C9A84C] hover:text-[#A8872F] flex items-center gap-1.5 transition-colors group shrink-0"
           >
             View all products
             <ArrowRight size={14} className="transition-transform group-hover:translate-x-1" />
@@ -219,7 +220,7 @@ export default function HomePage() {
             </div>
             <Link
               to="/products"
-              className="text-sm font-medium text-[#C9A84C] hover:text-[#A8872F] flex items-center gap-1.5 transition-colors group flex-shrink-0"
+              className="text-sm font-medium text-[#C9A84C] hover:text-[#A8872F] flex items-center gap-1.5 transition-colors group shrink-0"
             >
               See all
               <ArrowRight size={14} className="transition-transform group-hover:translate-x-1" />
@@ -276,7 +277,7 @@ export default function HomePage() {
             <rect width="100%" height="100%" fill="url(#mission-pattern)" />
           </svg>
         </div>
-        <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-gradient-to-l from-[#C9A84C]/5 to-transparent pointer-events-none" />
+        <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-linear-to-l from-[#C9A84C]/5 to-transparent pointer-events-none" />
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
           <div className="max-w-2xl">
@@ -343,7 +344,7 @@ export default function HomePage() {
             />
             <button
               type="submit"
-              className="bg-[#C9A84C] hover:bg-[#D4B96A] text-black font-semibold px-6 py-3 rounded text-sm transition-colors duration-200 flex-shrink-0"
+              className="bg-[#C9A84C] hover:bg-[#D4B96A] text-black font-semibold px-6 py-3 rounded text-sm transition-colors duration-200 shrink-0"
             >
               Subscribe
             </button>

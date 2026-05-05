@@ -40,6 +40,7 @@ export interface Product {
   seller_name: string;
   category: number | null;
   category_name: string;
+  category_slug: string | null;
   name: string;
   slug: string;
   description: string;
@@ -49,6 +50,8 @@ export interface Product {
   is_approved: boolean;
   location: string;
   images: ProductImage[];
+  avg_rating: number;
+  review_count: number;
   created_at: string;
   updated_at: string;
 }

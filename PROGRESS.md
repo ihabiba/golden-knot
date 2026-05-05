@@ -512,19 +512,23 @@ All TypeScript interfaces in one file:
 - [x] Tailwind CSS v4 + Google Fonts via `index.html` (Playfair Display + Inter)
 - [x] Navbar — responsive, auth-aware, search overlay, user dropdown
 - [x] Footer — brand, links, inline SVG social icons, developer credit
-- [x] ProductCard component
+- [x] ProductCard — updated to use real `Product` type, API-connected cart, gradient from product ID, stock badge, real image support
 - [x] CategoryCard component
-- [x] HomePage — complete with 6 sections, mock data
+- [x] HomePage — complete with 6 sections, mock data typed as real `Product[]`
 - [x] LoginPage — fully functional, connected to real API, split luxury layout
 - [x] RegisterPage — fully functional, connected to real API, split luxury layout, auto-login on success
 - [x] `core` app + `seed_db` management command — 20 products, 3 sellers, 5 customers, 1 admin, 6 categories, 10 reviews, 2 promo codes
+- [x] Backend: `avg_rating` + `review_count` annotations on Product queryset (single DB query)
+- [x] Backend: `category_slug` added to ProductSerializer
+- [x] Backend: `lookup_field = 'slug'` — `/api/products/<slug>/` works
+- [x] Backend: category filter (`?category=<slug>`), price filter (`?min_price=`, `?max_price=`)
+- [x] `ProductsPage` — real API data, debounced search (300ms), category/price/sort filters, URL-synced params, loading skeletons, empty state, pagination, mobile filter drawer
+- [x] `ProductDetailPage` — image gallery (real images + gradient placeholder), product info, quantity selector, add to cart API, wishlist toggle, Description + Reviews tabs, rating breakdown chart, write-a-review form (star selector, authenticated only), related products row
 - [x] `tsc --noEmit` → 0 errors
 - [x] `manage.py check` → 0 issues
 - [x] Tested against live Django backend (login 200/401, token refresh confirmed)
 
 ### To Build Next
-- [ ] `ProductsPage` — product grid with search + category filter + sort
-- [ ] `ProductDetailPage` — images, description, add to cart, reviews section
 - [ ] `CartPage` — item list, quantity controls, totals, promo code input
 - [ ] `CheckoutPage` — shipping form + HesabPay payment integration
 - [ ] `AccountPage` — profile info, order history
@@ -540,12 +544,10 @@ All TypeScript interfaces in one file:
 - [ ] About, Contact, FAQ static pages
 - [ ] Lengthen `SECRET_KEY` in `.env` to 50+ chars before production
 
-### Phase 2
-- [ ] Product reviews displayed on detail page
+### Later
 - [ ] Order tracking timeline
-- [ ] Advanced search and filters (price range, location, rating)
 - [ ] Payout request flow for sellers
-- [ ] Notification bell component
+- [ ] Notification bell component with live count
 
 ### Phase 3
 - [ ] Multi-language (English, Dari, Pashto)
