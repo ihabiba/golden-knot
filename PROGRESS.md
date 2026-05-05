@@ -12,6 +12,7 @@ Multi-vendor e-commerce marketplace connecting Afghan women weavers (sellers) wi
 golden-knot/
 ├── backend/              Django REST Framework API
 │   ├── goldenknot/       Project config (settings, root urls)
+│   ├── core/             Management commands (seed_db)
 │   ├── users/
 │   ├── products/
 │   ├── orders/
@@ -23,12 +24,14 @@ golden-knot/
 │   ├── requirements.txt
 │   └── .env.example
 ├── frontend/             React + TypeScript + Vite SPA
+│   ├── index.html        Google Fonts loaded here (Playfair Display + Inter)
 │   └── src/
-│       ├── api/
-│       ├── context/
-│       ├── pages/
-│       ├── components/   (empty — to be built)
-│       └── types/
+│       ├── api/          Axios call modules per domain
+│       ├── context/      AuthContext, CartContext
+│       ├── components/   Navbar, Footer, ProductCard, CategoryCard
+│       ├── pages/        11 route-level pages
+│       ├── utils/        apiError.ts — DRF error parsing
+│       └── types/        All TypeScript interfaces
 ├── PROGRESS.md           ← this file
 ├── CLAUDE.md             ← AI context file (gitignored)
 ├── README.md
@@ -337,6 +340,33 @@ golden-knot/
 
 ---
 
+### App: `core/`
+
+No models or views. Contains only management commands.
+
+| Command | File | What it does |
+|---------|------|-------------|
+| `seed_db` | `core/management/commands/seed_db.py` | Populates DB with realistic test data. Idempotent — uses `get_or_create` throughout, safe to run multiple times. Prints a summary of created vs skipped records. |
+
+**What `seed_db` creates:**
+
+| Type | Count | Details |
+|------|-------|---------|
+| Admin | 1 | `admin@goldenknot.com` / `admin123` |
+| Sellers | 3 | `seller1-3@test.com` / `test1234` — each with approved `SellerProfile` |
+| Customers | 5 | `customer1-5@test.com` / `test1234` |
+| Categories | 6 | Hand-Knotted Rugs, Kilim Rugs, Cushion Covers, Wall Hangings, Prayer Rugs, Table Runners |
+| Products | 20 | Spread across 3 sellers + 6 categories, all `is_approved=True`, `is_active=True`, detailed Afghan textile descriptions |
+| Reviews | 10 | From customers across 10 products, ratings 3–5, realistic comments |
+| Promo Codes | 2 | `WELCOME10` (10% off, no min), `GOLDEN20` (20% off, min $100) |
+
+**Run:**
+```bash
+python manage.py seed_db
+```
+
+---
+
 ### Backend Config Files
 
 | File | Contents |
@@ -487,8 +517,10 @@ All TypeScript interfaces in one file:
 - [x] HomePage — complete with 6 sections, mock data
 - [x] LoginPage — fully functional, connected to real API, split luxury layout
 - [x] RegisterPage — fully functional, connected to real API, split luxury layout, auto-login on success
+- [x] `core` app + `seed_db` management command — 20 products, 3 sellers, 5 customers, 1 admin, 6 categories, 10 reviews, 2 promo codes
 - [x] `tsc --noEmit` → 0 errors
-- [x] Tested against live Django backend (200/401 responses confirmed)
+- [x] `manage.py check` → 0 issues
+- [x] Tested against live Django backend (login 200/401, token refresh confirmed)
 
 ### To Build Next
 - [ ] `ProductsPage` — product grid with search + category filter + sort
