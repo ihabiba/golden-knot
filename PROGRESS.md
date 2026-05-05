@@ -397,8 +397,16 @@ All TypeScript interfaces in one file:
 
 | File | Exports |
 |------|---------|
-| `AuthContext.tsx` | `AuthProvider` — stores `user` and `accessToken` in state, persists tokens to localStorage, provides `login()` and `logout()`. `useAuth()` — hook to consume the context, throws if used outside provider. |
+| `AuthContext.tsx` | `AuthProvider` — stores `user` and `accessToken`. `login(email, password, rememberMe?)` — if `rememberMe=true` stores tokens in `localStorage`, otherwise `sessionStorage`. Checks both on init. `logout()` clears both storages. `useAuth()` hook. |
 | `CartContext.tsx` | `CartProvider` — tracks `itemCount` (cart badge count), provides `setItemCount`, `incrementCount`, `decrementCount`. `useCart()` hook. |
+
+---
+
+### `src/utils/`
+
+| File | Exports |
+|------|---------|
+| `apiError.ts` | `parseApiError(err)` — returns a flat human-readable string from any DRF error (handles `detail` field and field-level arrays). `parseFieldErrors(err)` — returns a `Record<string, string>` of field → first error message, used to show errors under individual inputs. |
 
 ---
 
@@ -422,8 +430,8 @@ All TypeScript interfaces in one file:
 | `ProductDetailPage.tsx` | `/products/:slug` | Stub |
 | `CartPage.tsx` | `/cart` | Stub |
 | `CheckoutPage.tsx` | `/checkout` | Stub |
-| `LoginPage.tsx` | `/login` | **Functional** — email/password form, calls `useAuth().login()`, redirects on success |
-| `RegisterPage.tsx` | `/register` | Stub |
+| `LoginPage.tsx` | `/login` | **Complete** — split layout (dark brand panel + form), email + password (show/hide), remember me checkbox (controls localStorage vs sessionStorage), forgot password link, Google placeholder button, API error banner, loading state, link to register |
+| `RegisterPage.tsx` | `/register` | **Complete** — split layout, role toggle cards (Customer/Seller), username + email + phone + password (show/hide) + confirm password, live password strength bar (4 segments), live password match indicator, field-level API errors, auto-login on success, link to login |
 | `AccountPage.tsx` | `/account` | Stub |
 | `OrdersPage.tsx` | `/orders` | Stub |
 | `SellerDashboardPage.tsx` | `/seller/dashboard` | Stub |
@@ -437,7 +445,8 @@ All TypeScript interfaces in one file:
 |------|---------|
 | `App.tsx` | `BrowserRouter` with layout wrapper (Navbar + `pt-16` content area + Footer). All 11 routes. |
 | `main.tsx` | Mounts app; wraps `<App>` in `<AuthProvider>` + `<CartProvider>` |
-| `src/index.css` | Tailwind v4 import + Google Fonts (Playfair Display + Inter) + CSS vars (`--gold`, `--charcoal`, `--off-white`) + `.font-display` class |
+| `src/index.css` | Tailwind v4 import + CSS vars (`--gold`, `--charcoal`, `--off-white`) + `.font-display` class (Google Fonts moved to `index.html`) |
+| `index.html` | Google Fonts loaded via `<link>` tags (Playfair Display + Inter) — avoids CSS `@import` ordering conflicts with Tailwind v4 |
 | `vite.config.ts` | Registers `@vitejs/plugin-react` and `@tailwindcss/vite` |
 | `.env.example` | `VITE_API_URL=http://localhost:8000/api` |
 
@@ -466,23 +475,26 @@ All TypeScript interfaces in one file:
 - [x] All TypeScript interfaces matching backend models
 - [x] Axios client with JWT interceptors + silent token refresh
 - [x] API modules for every domain
-- [x] Auth context with login/logout
+- [x] Auth context with login/logout + rememberMe (localStorage vs sessionStorage)
 - [x] Cart context with item count badge
+- [x] `src/utils/apiError.ts` — DRF error parsing utilities
 - [x] React Router with all 11 routes
-- [x] Tailwind CSS v4 + Google Fonts (Playfair Display + Inter)
+- [x] Tailwind CSS v4 + Google Fonts via `index.html` (Playfair Display + Inter)
 - [x] Navbar — responsive, auth-aware, search overlay, user dropdown
-- [x] Footer — brand, links, social icons, developer credit
+- [x] Footer — brand, links, inline SVG social icons, developer credit
 - [x] ProductCard component
 - [x] CategoryCard component
 - [x] HomePage — complete with 6 sections, mock data
+- [x] LoginPage — fully functional, connected to real API, split luxury layout
+- [x] RegisterPage — fully functional, connected to real API, split luxury layout, auto-login on success
 - [x] `tsc --noEmit` → 0 errors
+- [x] Tested against live Django backend (200/401 responses confirmed)
 
 ### To Build Next
 - [ ] `ProductsPage` — product grid with search + category filter + sort
 - [ ] `ProductDetailPage` — images, description, add to cart, reviews section
 - [ ] `CartPage` — item list, quantity controls, totals, promo code input
 - [ ] `CheckoutPage` — shipping form + HesabPay payment integration
-- [ ] `RegisterPage` — form calling `/api/users/register/`
 - [ ] `AccountPage` — profile info, order history
 - [ ] `SellerDashboardPage` — product management, order list, earnings
 - [ ] `AdminDashboardPage` — analytics, seller approval, product moderation
@@ -494,18 +506,7 @@ All TypeScript interfaces in one file:
 - [ ] Notification bell in Navbar (live count from API)
 - [ ] Wishlist page
 - [ ] About, Contact, FAQ static pages
-- [ ] `ProductDetailPage` — images, description, add to cart, reviews
-- [ ] `CartPage` — item list, quantity controls, totals
-- [ ] `CheckoutPage` — shipping form + HesabPay payment integration
-- [ ] `RegisterPage` — form calling `/api/users/register/`
-- [ ] `AccountPage` — profile info, order history
-- [ ] `SellerDashboardPage` — product management, order list, earnings
-- [ ] `AdminDashboardPage` — analytics, seller approval, product moderation
-- [ ] Backend: Approve/reject product endpoint (admin action)
-- [ ] Backend: Approve/suspend seller endpoint (admin action)
-- [ ] Backend: Apply promo code logic at checkout
-- [ ] Backend: HesabPay payment gateway integration
-- [ ] Migrations: run `python manage.py makemigrations && migrate` against Supabase
+- [ ] Lengthen `SECRET_KEY` in `.env` to 50+ chars before production
 
 ### Phase 2
 - [ ] Product reviews displayed on detail page
