@@ -1,1 +1,38 @@
 @import "tailwindcss";
+
+:root {
+  --gold: #C9A84C;
+  --gold-light: #D4B96A;
+  --gold-dark: #A8872F;
+  --charcoal: #1C1C1C;
+  --off-white: #FAFAF8;
+}
+
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: var(--off-white);
+  color: var(--charcoal);
+}
+
+.font-display {
+  font-family: 'Playfair Display', serif;
+}
+
+.gold-text { color: var(--gold); }
+.gold-border { border-color: var(--gold); }
+.gold-bg { background-color: var(--gold); }
+
+html { scroll-behavior: smooth; }
+
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #f1f1f1; }
+::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 3px; }
+
+.transition-gold {
+  transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, opacity 0.2s ease;
+}

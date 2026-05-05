@@ -398,6 +398,18 @@ All TypeScript interfaces in one file:
 | File | Exports |
 |------|---------|
 | `AuthContext.tsx` | `AuthProvider` — stores `user` and `accessToken` in state, persists tokens to localStorage, provides `login()` and `logout()`. `useAuth()` — hook to consume the context, throws if used outside provider. |
+| `CartContext.tsx` | `CartProvider` — tracks `itemCount` (cart badge count), provides `setItemCount`, `incrementCount`, `decrementCount`. `useCart()` hook. |
+
+---
+
+### `src/components/`
+
+| File | What it does |
+|------|-------------|
+| `Navbar.tsx` | Fixed black navbar. Logo (gold, left), nav links with animated underline (center, hidden on mobile), right side: search icon, cart icon with count badge, Login/Register buttons or user avatar dropdown (role-aware: links to admin panel / seller dashboard / account). Mobile: hamburger → slide-down menu with auth buttons. Expandable search bar overlay. Click-outside closes user dropdown. |
+| `Footer.tsx` | Black footer. Brand column (description, email, location, social icons), Quick Links column, Sell With Us column (CTA to register as seller). Bottom bar: copyright + "Developed by Habiba Hassan" linking to `https://github.com/ihabiba` in gold on hover. |
+| `ProductCard.tsx` | Product card with textile-inspired gradient placeholder image (built from product color palette + woven SVG overlay), category badge, wishlist toggle (heart), "Add to Cart" button that slides up on hover, gold star rating, seller name, gold price. Calls `useCart().incrementCount()` on add. |
+| `CategoryCard.tsx` | Dark card (`#1C1C1C`) with gold-tinted icon, category name in Playfair Display, item count, arrow on hover. Hover: gold border glow + subtle lift. Links to `/products?category=<slug>`. |
 
 ---
 
@@ -405,7 +417,7 @@ All TypeScript interfaces in one file:
 
 | File | Route | Status |
 |------|-------|--------|
-| `HomePage.tsx` | `/` | Basic heading |
+| `HomePage.tsx` | `/` | **Complete** — Hero, Categories grid, Products grid, Why Us, Mission banner, Newsletter |
 | `ProductsPage.tsx` | `/products` | Stub |
 | `ProductDetailPage.tsx` | `/products/:slug` | Stub |
 | `CartPage.tsx` | `/cart` | Stub |
@@ -419,21 +431,26 @@ All TypeScript interfaces in one file:
 
 ---
 
-### `src/components/`
-
-Empty — to be built in Phase 1.
-
----
-
 ### Root Frontend Files
 
 | File | Purpose |
 |------|---------|
-| `App.tsx` | `BrowserRouter` with all 11 `<Route>` definitions |
-| `main.tsx` | Mounts app; wraps `<App>` in `<AuthProvider>` |
-| `src/index.css` | `@import "tailwindcss"` (Tailwind v4 syntax) |
+| `App.tsx` | `BrowserRouter` with layout wrapper (Navbar + `pt-16` content area + Footer). All 11 routes. |
+| `main.tsx` | Mounts app; wraps `<App>` in `<AuthProvider>` + `<CartProvider>` |
+| `src/index.css` | Tailwind v4 import + Google Fonts (Playfair Display + Inter) + CSS vars (`--gold`, `--charcoal`, `--off-white`) + `.font-display` class |
 | `vite.config.ts` | Registers `@vitejs/plugin-react` and `@tailwindcss/vite` |
 | `.env.example` | `VITE_API_URL=http://localhost:8000/api` |
+
+### HomePage sections (mock data, ready to swap for API)
+
+| Section | Content |
+|---------|---------|
+| **Hero** | Dark full-screen, Playfair Display headline, gold italic accent, textile mosaic SVG grid (right), Shop Now + Become a Seller CTAs, 4 stat counters |
+| **Categories** | 6 cards: Hand-Knotted Rugs, Kilim Rugs, Cushion Covers, Wall Hangings, Prayer Rugs, Table Runners — each with lucide icon + item count |
+| **Featured Products** | 8 mock products with textile gradient placeholders, ratings, prices, wishlist + add-to-cart |
+| **Why Golden Knot** | 3 cards: Authenticity Guaranteed, Global Delivery, Direct from Artisans |
+| **Mission Banner** | Dark section with mission copy, two CTAs |
+| **Newsletter** | Email subscribe form (frontend-only for now) |
 
 ---
 
@@ -450,15 +467,33 @@ Empty — to be built in Phase 1.
 - [x] Axios client with JWT interceptors + silent token refresh
 - [x] API modules for every domain
 - [x] Auth context with login/logout
+- [x] Cart context with item count badge
 - [x] React Router with all 11 routes
-- [x] Tailwind CSS v4 configured
-- [x] `django manage.py check` → 0 issues
+- [x] Tailwind CSS v4 + Google Fonts (Playfair Display + Inter)
+- [x] Navbar — responsive, auth-aware, search overlay, user dropdown
+- [x] Footer — brand, links, social icons, developer credit
+- [x] ProductCard component
+- [x] CategoryCard component
+- [x] HomePage — complete with 6 sections, mock data
 - [x] `tsc --noEmit` → 0 errors
 
-### Phase 1 — To Build Next
-- [ ] `components/` — Navbar, ProductCard, Footer
-- [ ] `HomePage` — featured products, seller highlights
-- [ ] `ProductsPage` — product grid with search + category filter
+### To Build Next
+- [ ] `ProductsPage` — product grid with search + category filter + sort
+- [ ] `ProductDetailPage` — images, description, add to cart, reviews section
+- [ ] `CartPage` — item list, quantity controls, totals, promo code input
+- [ ] `CheckoutPage` — shipping form + HesabPay payment integration
+- [ ] `RegisterPage` — form calling `/api/users/register/`
+- [ ] `AccountPage` — profile info, order history
+- [ ] `SellerDashboardPage` — product management, order list, earnings
+- [ ] `AdminDashboardPage` — analytics, seller approval, product moderation
+- [ ] Backend: Approve/reject product endpoint (admin action)
+- [ ] Backend: Approve/suspend seller endpoint (admin action)
+- [ ] Backend: Apply promo code logic at checkout
+- [ ] Backend: HesabPay payment gateway integration
+- [ ] Migrations: run `python manage.py makemigrations && migrate` against Supabase
+- [ ] Notification bell in Navbar (live count from API)
+- [ ] Wishlist page
+- [ ] About, Contact, FAQ static pages
 - [ ] `ProductDetailPage` — images, description, add to cart, reviews
 - [ ] `CartPage` — item list, quantity controls, totals
 - [ ] `CheckoutPage` — shipping form + HesabPay payment integration
