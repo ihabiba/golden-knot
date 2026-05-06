@@ -80,7 +80,10 @@ export interface ShippingAddress {
 export interface OrderItem {
   id: number;
   product: number;
+  product_name: string;
+  product_slug: string;
   seller: number;
+  seller_name: string;
   quantity: number;
   unit_price: string;
   subtotal: string;
@@ -107,6 +110,11 @@ export interface CartItem {
   id: number;
   product: number;
   product_name: string;
+  product_slug: string;
+  product_price: string;
+  product_stock: number;
+  seller_name: string;
+  product_image: string | null;
   quantity: number;
   subtotal: string;
 }
@@ -114,7 +122,20 @@ export interface CartItem {
 export interface Cart {
   id: number;
   items: CartItem[];
+  total: string;
+  item_count: number;
   created_at: string;
+}
+
+// ─── Promotions (validation) ──────────────────────────────────────────────────
+
+export interface PromoValidation {
+  id: number;
+  code: string;
+  discount_type: DiscountType;
+  discount_value: string;
+  discount_amount: string;
+  minimum_order: string;
 }
 
 // ─── Reviews ─────────────────────────────────────────────────────────────────

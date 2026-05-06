@@ -524,13 +524,28 @@ All TypeScript interfaces in one file:
 - [x] Backend: category filter (`?category=<slug>`), price filter (`?min_price=`, `?max_price=`)
 - [x] `ProductsPage` — real API data, debounced search (300ms), category/price/sort filters, URL-synced params, loading skeletons, empty state, pagination, mobile filter drawer
 - [x] `ProductDetailPage` — image gallery (real images + gradient placeholder), product info, quantity selector, add to cart API, wishlist toggle, Description + Reviews tabs, rating breakdown chart, write-a-review form (star selector, authenticated only), related products row
+- [x] Navbar — fixed: now uses `isAuthenticated` alone (user profile null bug resolved), logout visible and working on desktop + mobile
+- [x] Backend: CartItemSerializer enhanced — `product_slug`, `product_price`, `product_stock`, `seller_name`, `product_image` fields added
+- [x] Backend: CartSerializer — `total` and `item_count` computed fields added
+- [x] Backend: CartItemView — supports PATCH (quantity update) and DELETE (remove), both return updated Cart
+- [x] Backend: OrderItemSerializer — `product_name`, `product_slug`, `seller_name` added for confirmation page
+- [x] Backend: `POST /api/orders/from-cart/` — atomic order creation from cart, creates OrderItems, updates promo uses_count, clears cart
+- [x] Backend: `POST /api/promotions/validate/` — validates code + subtotal, returns discount amount
+- [x] `src/api/cart.ts` — `updateCartItem()` and `removeCartItem()` return `Cart`
+- [x] `src/api/orders.ts` — `createOrderFromCart()` added
+- [x] `src/api/promotions.ts` — `validatePromoCode()` added (new file)
+- [x] `CartPage` — real cart API, optimistic quantity updates, remove items, promo code validation + removal, sticky order summary, empty state, loading skeletons
+- [x] `CheckoutPage` — protected route, 3-step flow (Shipping → Review → Payment), smooth step transitions, address form with validation, sticky order summary, test mode order placement
+- [x] `OrderConfirmationPage` — success animation, order details, items list, totals, estimated delivery, print support, CTAs to orders list and shopping
+- [x] `PromoValidation` type added to `src/types/index.ts`
+- [x] `CartItem` and `Cart` types updated with new fields
+- [x] `OrderItem` type updated with `product_name`, `product_slug`, `seller_name`
 - [x] `tsc --noEmit` → 0 errors
 - [x] `manage.py check` → 0 issues
 - [x] Tested against live Django backend (login 200/401, token refresh confirmed)
 
 ### To Build Next
-- [ ] `CartPage` — item list, quantity controls, totals, promo code input
-- [ ] `CheckoutPage` — shipping form + HesabPay payment integration
+- [ ] `AccountPage` — profile info, edit profile, order history
 - [ ] `AccountPage` — profile info, order history
 - [ ] `SellerDashboardPage` — product management, order list, earnings
 - [ ] `AdminDashboardPage` — analytics, seller approval, product moderation

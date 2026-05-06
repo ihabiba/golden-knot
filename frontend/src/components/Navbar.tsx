@@ -12,15 +12,14 @@ export default function Navbar() {
   const { itemCount } = useCart();
   const navigate = useNavigate();
 
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
+  const [mobileOpen, setMobileOpen]   = useState(false);
+  const [searchOpen, setSearchOpen]   = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
   const userMenuRef = useRef<HTMLDivElement>(null);
-  const searchRef = useRef<HTMLInputElement>(null);
+  const searchRef   = useRef<HTMLInputElement>(null);
 
-  // Close user menu when clicking outside
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
@@ -31,7 +30,6 @@ export default function Navbar() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Focus search input when opened
   useEffect(() => {
     if (searchOpen) searchRef.current?.focus();
   }, [searchOpen]);
@@ -48,6 +46,7 @@ export default function Navbar() {
   const handleLogout = () => {
     logout();
     setUserMenuOpen(false);
+    setMobileOpen(false);
     navigate('/');
   };
 
@@ -57,25 +56,32 @@ export default function Navbar() {
     { label: 'About', to: '/about' },
   ];
 
+  // Safe helpers — work even when user profile hasn't been fetched yet
   const getDashboardLink = () => {
-    if (!user) return '/account';
-    if (user.role === 'admin') return '/admin';
-    if (user.role === 'seller') return '/seller/dashboard';
+    if (user?.role === 'admin') return '/admin';
+    if (user?.role === 'seller') return '/seller/dashboard';
     return '/account';
   };
 
-  const getUserInitials = () => {
-    if (!user) return 'U';
+  const getInitials = () => {
+    if (!user) return <User size={16} />;
     return (user.username || user.email).charAt(0).toUpperCase();
+  };
+
+  const getDashboardLabel = () => {
+    if (user?.role === 'admin') return 'Admin Panel';
+    if (user?.role === 'seller') return 'Seller Dashboard';
+    return 'My Account';
   };
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-black">
-      {/* Search overlay */}
+
+      {/* ── Search overlay ────────────────────────────────────────────────── */}
       {searchOpen && (
         <div className="absolute inset-0 z-10 bg-black flex items-center px-4 sm:px-6 lg:px-8">
           <form onSubmit={handleSearch} className="flex items-center w-full max-w-3xl mx-auto gap-4">
-            <Search size={20} className="text-[#C9A84C] flex-shrink-0" />
+            <Search size={20} className="text-[#C9A84C] shrink-0" />
             <input
               ref={searchRef}
               type="text"
@@ -99,11 +105,7 @@ export default function Navbar() {
         <div className="flex items-center justify-between h-16">
 
           {/* Logo */}
-          <Link
-            to="/"
-            className="flex-shrink-0 group"
-            onClick={() => setMobileOpen(false)}
-          >
+          <Link to="/" className="shrink-0 group" onClick={() => setMobileOpen(false)}>
             <span className="text-[#C9A84C] font-semibold tracking-[0.3em] text-base uppercase group-hover:text-[#D4B96A] transition-colors duration-200">
               Golden Knot
             </span>
@@ -125,20 +127,17 @@ export default function Navbar() {
                 {({ isActive }) => (
                   <>
                     {label}
-                    <span
-                      className={`absolute -bottom-1 left-0 h-px bg-[#C9A84C] transition-all duration-200 ${
-                        isActive ? 'w-full' : 'w-0 group-hover:w-full'
-                      }`}
-                    />
+                    <span className={`absolute -bottom-1 left-0 h-px bg-[#C9A84C] transition-all duration-200 ${isActive ? 'w-full' : 'w-0 group-hover:w-full'}`} />
                   </>
                 )}
               </NavLink>
             ))}
           </div>
 
-          {/* Right side — icons + auth */}
+          {/* Right side */}
           <div className="flex items-center gap-1 sm:gap-2">
-            {/* Search icon */}
+
+            {/* Search */}
             <button
               onClick={() => setSearchOpen(true)}
               className="p-2 text-gray-300 hover:text-[#C9A84C] transition-colors duration-200 rounded-full hover:bg-white/5"
@@ -163,41 +162,46 @@ export default function Navbar() {
 
             {/* Auth — desktop */}
             <div className="hidden md:flex items-center gap-2 ml-2">
-              {isAuthenticated && user ? (
+              {isAuthenticated ? (
                 <div className="relative" ref={userMenuRef}>
                   <button
                     onClick={() => setUserMenuOpen((o) => !o)}
-                    className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors duration-200 group"
+                    className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors duration-200"
                   >
-                    <span className="w-8 h-8 rounded-full bg-[#C9A84C] text-black font-semibold text-sm flex items-center justify-center flex-shrink-0">
-                      {getUserInitials()}
+                    <span className="w-8 h-8 rounded-full bg-[#C9A84C] text-black font-semibold text-sm flex items-center justify-center shrink-0">
+                      {getInitials()}
                     </span>
-                    <span className="text-sm font-medium max-w-[100px] truncate">
-                      {user.username || user.email}
-                    </span>
-                    <ChevronDown
-                      size={14}
-                      className={`transition-transform duration-200 ${userMenuOpen ? 'rotate-180' : ''}`}
-                    />
+                    <ChevronDown size={14} className={`transition-transform duration-200 ${userMenuOpen ? 'rotate-180' : ''}`} />
                   </button>
 
                   {userMenuOpen && (
-                    <div className="absolute right-0 top-full mt-2 w-52 bg-white rounded-lg shadow-xl border border-gray-100 py-1 z-50 animate-in">
+                    <div className="absolute right-0 top-full mt-2 w-52 bg-white rounded-lg shadow-xl border border-gray-100 py-1 z-50">
+                      {/* Profile info */}
                       <div className="px-4 py-3 border-b border-gray-100">
-                        <p className="text-xs text-gray-500 uppercase tracking-wider">Signed in as</p>
-                        <p className="text-sm font-medium text-gray-900 truncate">{user.email}</p>
-                        <span className="inline-block mt-1 text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full bg-[#C9A84C]/10 text-[#A8872F]">
-                          {user.role}
-                        </span>
+                        {user ? (
+                          <>
+                            <p className="text-xs text-gray-500 uppercase tracking-wider">Signed in as</p>
+                            <p className="text-sm font-medium text-gray-900 truncate mt-0.5">{user.email}</p>
+                            <span className="inline-block mt-1.5 text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full bg-[#C9A84C]/10 text-[#A8872F]">
+                              {user.role}
+                            </span>
+                          </>
+                        ) : (
+                          <p className="text-xs text-gray-500">You are signed in</p>
+                        )}
                       </div>
+
+                      {/* Dashboard */}
                       <Link
                         to={getDashboardLink()}
                         onClick={() => setUserMenuOpen(false)}
                         className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#C9A84C] transition-colors"
                       >
-                        {user.role === 'admin' ? <ShieldCheck size={16} /> : <LayoutDashboard size={16} />}
-                        {user.role === 'admin' ? 'Admin Panel' : user.role === 'seller' ? 'Seller Dashboard' : 'My Account'}
+                        {user?.role === 'admin' ? <ShieldCheck size={16} /> : <LayoutDashboard size={16} />}
+                        {getDashboardLabel()}
                       </Link>
+
+                      {/* Orders */}
                       <Link
                         to="/orders"
                         onClick={() => setUserMenuOpen(false)}
@@ -206,6 +210,8 @@ export default function Navbar() {
                         <Package size={16} />
                         My Orders
                       </Link>
+
+                      {/* Sign out */}
                       <div className="border-t border-gray-100 mt-1 pt-1">
                         <button
                           onClick={handleLogout}
@@ -236,19 +242,16 @@ export default function Navbar() {
               )}
             </div>
 
-            {/* Mobile auth shortcut */}
-            {isAuthenticated && user ? (
+            {/* Mobile — avatar or user icon */}
+            {isAuthenticated ? (
               <button
                 onClick={() => setUserMenuOpen((o) => !o)}
-                className="md:hidden w-8 h-8 rounded-full bg-[#C9A84C] text-black font-semibold text-sm flex items-center justify-center flex-shrink-0"
+                className="md:hidden w-8 h-8 rounded-full bg-[#C9A84C] text-black font-semibold text-sm flex items-center justify-center shrink-0"
               >
-                {getUserInitials()}
+                {getInitials()}
               </button>
             ) : (
-              <Link
-                to="/login"
-                className="md:hidden p-2 text-gray-300 hover:text-[#C9A84C] transition-colors"
-              >
+              <Link to="/login" className="md:hidden p-2 text-gray-300 hover:text-[#C9A84C] transition-colors">
                 <User size={19} />
               </Link>
             )}
@@ -277,9 +280,7 @@ export default function Navbar() {
                 onClick={() => setMobileOpen(false)}
                 className={({ isActive }) =>
                   `block px-3 py-3 text-sm font-medium tracking-wider uppercase rounded-lg transition-colors ${
-                    isActive
-                      ? 'text-[#C9A84C] bg-white/5'
-                      : 'text-gray-300 hover:text-white hover:bg-white/5'
+                    isActive ? 'text-[#C9A84C] bg-white/5' : 'text-gray-300 hover:text-white hover:bg-white/5'
                   }`
                 }
               >
@@ -287,7 +288,34 @@ export default function Navbar() {
               </NavLink>
             ))}
           </div>
-          {!isAuthenticated && (
+
+          {isAuthenticated ? (
+            <div className="px-4 pb-4 border-t border-white/10 pt-4 space-y-1">
+              <Link
+                to={getDashboardLink()}
+                onClick={() => setMobileOpen(false)}
+                className="flex items-center gap-3 px-3 py-2.5 text-sm text-gray-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
+              >
+                <LayoutDashboard size={16} />
+                {getDashboardLabel()}
+              </Link>
+              <Link
+                to="/orders"
+                onClick={() => setMobileOpen(false)}
+                className="flex items-center gap-3 px-3 py-2.5 text-sm text-gray-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
+              >
+                <Package size={16} />
+                My Orders
+              </Link>
+              <button
+                onClick={handleLogout}
+                className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-red-400 hover:text-red-300 hover:bg-white/5 rounded-lg transition-colors"
+              >
+                <LogOut size={16} />
+                Sign Out
+              </button>
+            </div>
+          ) : (
             <div className="px-4 pb-4 flex gap-2 border-t border-white/10 pt-4">
               <Link
                 to="/login"
