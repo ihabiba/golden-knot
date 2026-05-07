@@ -1,5 +1,6 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
+import { Toaster } from 'react-hot-toast';
 import './index.css';
 import App from './App.tsx';
 import { AuthProvider } from './context/AuthContext.tsx';
@@ -10,6 +11,26 @@ createRoot(document.getElementById('root')!).render(
     <AuthProvider>
       <CartProvider>
         <App />
+        <Toaster
+          position="top-right"
+          toastOptions={{
+            duration: 3500,
+            style: {
+              background: '#1C1C1C',
+              color: '#F5F0E8',
+              border: '1px solid #2a2a2a',
+              borderRadius: '10px',
+              fontSize: '13px',
+              fontFamily: 'Inter, sans-serif',
+            },
+            success: {
+              iconTheme: { primary: '#C9A84C', secondary: '#1C1C1C' },
+            },
+            error: {
+              iconTheme: { primary: '#ef4444', secondary: '#ffffff' },
+            },
+          }}
+        />
       </CartProvider>
     </AuthProvider>
   </StrictMode>,

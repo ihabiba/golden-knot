@@ -1,4 +1,7 @@
-from rest_framework import viewsets, permissions
+from rest_framework import viewsets, permissions, status
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from django.db.models import Q
 from .models import SellerProfile, Payout
 from .serializers import SellerProfileSerializer, PayoutSerializer
 
@@ -8,10 +11,56 @@ class SellerProfileViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
     def get_queryset(self):
+        user = self.request.user
+        if user.is_authenticated:
+            if user.role == "admin":
+                qs = SellerProfile.objects.select_related("user")
+                status_filter = self.request.query_params.get("status")
+                if status_filter:
+                    qs = qs.filter(status=status_filter)
+                return qs
+            if user.role == "seller":
+                return SellerProfile.objects.select_related("user").filter(
+                    Q(status="approved") | Q(user=user)
+                )
         return SellerProfile.objects.select_related("user").filter(status="approved")
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
+
+    @action(detail=False, methods=["get"], url_path="my-profile")
+    def my_profile(self, request):
+        if not request.user.is_authenticated:
+            return Response(
+                {"detail": "Authentication required."},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+        try:
+            profile = SellerProfile.objects.select_related("user").get(user=request.user)
+            return Response(SellerProfileSerializer(profile).data)
+        except SellerProfile.DoesNotExist:
+            return Response(
+                {"detail": "Seller profile not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+    @action(detail=True, methods=["patch"])
+    def approve(self, request, pk=None):
+        if not request.user.is_authenticated or request.user.role != "admin":
+            return Response({"detail": "Forbidden."}, status=status.HTTP_403_FORBIDDEN)
+        profile = self.get_object()
+        profile.status = "approved"
+        profile.save()
+        return Response({"detail": "Seller approved.", "id": profile.id, "status": "approved"})
+
+    @action(detail=True, methods=["patch"])
+    def reject(self, request, pk=None):
+        if not request.user.is_authenticated or request.user.role != "admin":
+            return Response({"detail": "Forbidden."}, status=status.HTTP_403_FORBIDDEN)
+        profile = self.get_object()
+        profile.status = "suspended"
+        profile.save()
+        return Response({"detail": "Seller rejected.", "id": profile.id, "status": "suspended"})
 
 
 class PayoutViewSet(viewsets.ModelViewSet):
@@ -21,7 +70,7 @@ class PayoutViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         if user.role == "admin":
-            return Payout.objects.all()
+            return Payout.objects.select_related("seller").all()
         return Payout.objects.filter(seller=user)
 
     def perform_create(self, serializer):

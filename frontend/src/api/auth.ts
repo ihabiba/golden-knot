@@ -14,3 +14,6 @@ export const register = (data: {
 
 export const refreshToken = (refresh: string) =>
   api.post<{ access: string }>('/auth/token/refresh/', { refresh });
+
+export const fetchCurrentUser = () =>
+  api.get<User>('/users/me/');

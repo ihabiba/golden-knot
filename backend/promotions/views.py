@@ -15,9 +15,13 @@ class IsAdminOrReadOnly(permissions.BasePermission):
 
 
 class PromoCodeViewSet(viewsets.ModelViewSet):
-    queryset = PromoCode.objects.filter(is_active=True)
     serializer_class = PromoCodeSerializer
     permission_classes = [IsAdminOrReadOnly]
+
+    def get_queryset(self):
+        if self.request.user.is_authenticated and self.request.user.role == "admin":
+            return PromoCode.objects.all()
+        return PromoCode.objects.filter(is_active=True)
 
     @action(
         detail=False,

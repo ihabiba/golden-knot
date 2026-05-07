@@ -2,7 +2,7 @@
 
 Multi-vendor e-commerce marketplace connecting Afghan women weavers (sellers) with global buyers (customers). Three user roles: **customer**, **seller**, **admin**.
 
-> This is a living document. will Update it whenever a new feature is built, a model changes, or a new file is added.
+> This is a living document. Update it whenever a new feature is built, a model changes, or a new file is added.
 
 ---
 
@@ -28,8 +28,8 @@ golden-knot/
 │   └── src/
 │       ├── api/          Axios call modules per domain
 │       ├── context/      AuthContext, CartContext
-│       ├── components/   Navbar, Footer, ProductCard, CategoryCard
-│       ├── pages/        11 route-level pages
+│       ├── components/   Navbar, Footer, ProductCard, CategoryCard, + shared dashboard components
+│       ├── pages/        All route-level pages
 │       ├── utils/        apiError.ts — DRF error parsing
 │       └── types/        All TypeScript interfaces
 ├── PROGRESS.md           ← this file
@@ -64,32 +64,33 @@ golden-knot/
 
 | Model | Key Fields |
 |-------|-----------|
-| `User` | Extends `AbstractUser`. `email` (unique, used as `USERNAME_FIELD`). `role` (choices: `customer` / `seller` / `admin`, default `customer`). `phone`, `avatar` (ImageField), `created_at`. |
+| `User` | Extends `AbstractUser`. `email` (unique, `USERNAME_FIELD`). `role` (customer/seller/admin, default customer). `phone`, `avatar`, `is_active`, `created_at`. |
 
 **Serializers**
 
 | Serializer | Purpose |
 |-----------|---------|
-| `UserSerializer` | Exposes `id, email, username, role, phone, avatar, created_at`. `id` and `created_at` read-only. |
-| `RegisterSerializer` | Accepts `email, username, password` (write-only, min 8 chars), `role, phone`. Calls `create_user()`. |
+| `UserSerializer` | Exposes `id, email, username, role, phone, avatar, is_active, created_at`. `id`, `is_active`, `created_at` read-only. |
+| `RegisterSerializer` | Accepts `email, username, password` (min 8 chars), `role, phone`. |
 
 **Views**
 
 | View | Type | Permission | Notes |
 |------|------|-----------|-------|
 | `RegisterView` | `CreateAPIView` | `AllowAny` | Public registration |
-| `UserViewSet` | `ModelViewSet` | `IsAuthenticated` | Admin sees all users, others see only themselves |
+| `UserViewSet` | `ModelViewSet` | `IsAuthenticated` | Admin sees all, others see themselves. Custom actions: `me`, `change_password`, `deactivate`, `activate`. |
 
 **URLs**
 
-| Method | URL | View |
-|--------|-----|------|
-| POST | `/api/users/register/` | `RegisterView` |
-| GET | `/api/users/` | `UserViewSet.list` (admin only) |
-| GET | `/api/users/<id>/` | `UserViewSet.retrieve` |
-| PATCH | `/api/users/<id>/` | `UserViewSet.partial_update` |
-
-**Admin:** `UserAdmin` — extends `BaseUserAdmin`, adds role/phone/avatar fieldset.
+| Method | URL | Notes |
+|--------|-----|-------|
+| POST | `/api/users/register/` | Public registration |
+| GET | `/api/users/me/` | Get current authenticated user |
+| GET | `/api/users/` | List users (admin only) |
+| PATCH | `/api/users/<id>/` | Update user |
+| PATCH | `/api/users/<id>/change-password/` | Change password (requires old_password for non-admin) |
+| PATCH | `/api/users/<id>/deactivate/` | Deactivate user (admin only) |
+| PATCH | `/api/users/<id>/activate/` | Activate user (admin only) |
 
 ---
 
@@ -99,38 +100,29 @@ golden-knot/
 
 | Model | Key Fields |
 |-------|-----------|
-| `Category` | `name`, `slug` (unique), `description`, `parent` (self-FK, nullable — supports subcategories) |
-| `Product` | FK → `User` (seller), FK → `Category`. `name`, `slug` (unique), `description`, `price` (decimal 10,2), `stock`, `is_active`, `is_approved`, `location`, `created_at`, `updated_at` |
-| `ProductImage` | FK → `Product`. `image` (uploads to `products/`), `is_primary`, `order`. Ordered by `order`. |
-
-**Serializers**
-
-| Serializer | Purpose |
-|-----------|---------|
-| `CategorySerializer` | All category fields |
-| `ProductImageSerializer` | `id, image, is_primary, order` |
-| `ProductSerializer` | All product fields + nested `images` (read-only) + `category_name` + `seller_name`. `seller`, `is_approved`, timestamps are read-only. |
+| `Category` | `name`, `slug` (unique), `description`, `parent` (self-FK) |
+| `Product` | FK seller, FK category, `name`, `slug`, `description`, `price`, `stock`, `is_active`, `is_approved`, `location`, timestamps |
+| `ProductImage` | FK product, `image`, `is_primary`, `order` |
 
 **Views**
 
-| View | Type | Permission | Notes |
-|------|------|-----------|-------|
-| `CategoryViewSet` | `ReadOnlyModelViewSet` | `AllowAny` | Public |
-| `ProductViewSet` | `ModelViewSet` | `IsAuthenticatedOrReadOnly` | Filters `is_active=True, is_approved=True`. Search: `name, description, location`. Order by: `price, created_at`. Sets `seller` to `request.user` on create. |
+| View | Notes |
+|------|-------|
+| `CategoryViewSet` | `ReadOnlyModelViewSet`, AllowAny |
+| `ProductViewSet` | Admin → all products. Seller → own + public (use `?seller_only=true` for own only). Public → approved+active. Search: `name, description, location`. Custom actions: `approve`, `reject` (admin only). |
 
 **URLs**
 
 | Method | URL | Notes |
 |--------|-----|-------|
-| GET | `/api/products/` | List approved active products |
-| POST | `/api/products/` | Create product (seller) |
-| GET | `/api/products/<id>/` | Product detail |
-| PATCH/PUT | `/api/products/<id>/` | Update product |
-| DELETE | `/api/products/<id>/` | Delete product |
+| GET | `/api/products/` | List (role-filtered) |
+| POST | `/api/products/` | Create (seller) |
+| GET | `/api/products/<slug>/` | Detail |
+| PATCH | `/api/products/<slug>/` | Update |
+| DELETE | `/api/products/<slug>/` | Delete |
+| PATCH | `/api/products/<slug>/approve/` | Admin approve |
+| PATCH | `/api/products/<slug>/reject/` | Admin reject |
 | GET | `/api/products/categories/` | Category list |
-| GET | `/api/products/categories/<id>/` | Category detail |
-
-**Admin:** `CategoryAdmin` (prepopulated slug), `ProductAdmin` (with `ProductImageInline`).
 
 ---
 
@@ -140,239 +132,114 @@ golden-knot/
 
 | Model | Key Fields |
 |-------|-----------|
-| `Order` | FK → `User` (customer). `status` (choices: `pending / confirmed / processing / shipped / delivered / cancelled / refunded`). `total_price`, `shipping_address` (JSONField), FK → `PromoCode` (nullable), `discount_amount`, `payment_id`, `payment_status`, timestamps. |
-| `OrderItem` | FK → `Order`, FK → `Product`, FK → `User` (seller). `quantity`, `unit_price`. `subtotal` computed property. |
-
-**Serializers**
-
-| Serializer | Purpose |
-|-----------|---------|
-| `OrderItemSerializer` | All fields + `subtotal` (read-only) |
-| `OrderSerializer` | All order fields + nested `items` (read-only). `customer` and timestamps read-only. |
+| `Order` | FK customer, `status` (7 choices), `total_price`, `shipping_address` (JSONField), FK promo_code, `discount_amount`, `payment_id`, `payment_status`, timestamps |
+| `OrderItem` | FK order, product, seller, `quantity`, `unit_price`, `subtotal` (computed) |
 
 **Views**
 
-| View | Type | Permission | Notes |
-|------|------|-----------|-------|
-| `OrderViewSet` | `ModelViewSet` | `IsAuthenticated` | Admin → all orders. Seller → orders containing their items. Customer → own orders. |
+`OrderViewSet` — Admin → all. Seller → orders containing their items. Customer → own. Supports `?status=<status>` filter. Custom action: `from_cart` (atomic order creation).
 
 **URLs**
 
 | Method | URL | Notes |
 |--------|-----|-------|
-| GET | `/api/orders/` | List orders (role-filtered) |
-| POST | `/api/orders/` | Create order |
+| GET | `/api/orders/` | List (role-filtered, `?status=` filter) |
+| POST | `/api/orders/from-cart/` | Create order from cart (atomic) |
 | GET | `/api/orders/<id>/` | Order detail |
 | PATCH | `/api/orders/<id>/` | Update status |
-
-**Admin:** `OrderAdmin` with `OrderItemInline`.
 
 ---
 
 ### App: `cart/`
 
-**Models**
-
-| Model | Key Fields |
-|-------|-----------|
-| `Cart` | OneToOne → `User`. `created_at`. |
-| `CartItem` | FK → `Cart`, FK → `Product`. `quantity` (default 1). Unique together: `(cart, product)`. `subtotal` computed property. |
-
-**Serializers**
-
-| Serializer | Purpose |
-|-----------|---------|
-| `CartItemSerializer` | `id, product, product_name, quantity, subtotal` |
-| `CartSerializer` | `id, items (nested), created_at` |
-
-**Views**
-
-| View | Type | Permission | Notes |
-|------|------|-----------|-------|
-| `CartView` | `RetrieveAPIView` | `IsAuthenticated` | GET returns cart (auto-creates if missing). POST adds item — increments qty if product already in cart. |
-| `CartItemView` | `DestroyAPIView` | `IsAuthenticated` | Scoped to current user's cart. |
-
-**URLs**
-
 | Method | URL | Notes |
 |--------|-----|-------|
-| GET | `/api/cart/` | Get cart with all items |
+| GET | `/api/cart/` | Get cart (auto-creates if missing) |
 | POST | `/api/cart/` | Add item `{ product, quantity }` |
-| DELETE | `/api/cart/items/<id>/` | Remove item |
+| PATCH | `/api/cart/items/<id>/` | Update quantity (returns full Cart) |
+| DELETE | `/api/cart/items/<id>/` | Remove item (returns full Cart) |
 
-**Admin:** `CartAdmin` with `CartItemInline`.
+CartSerializer: `total` and `item_count` computed fields. CartItemSerializer: `product_slug`, `product_price`, `product_stock`, `seller_name`, `product_image`.
 
 ---
 
 ### App: `reviews/`
 
-**Models**
-
-| Model | Key Fields |
-|-------|-----------|
-| `Review` | FK → `Product`, FK → `User` (customer). `rating` (1–5, validated). `comment`, timestamps. Unique together: `(product, customer)` — one review per product per user. |
-
-**Serializers**
-
-| Serializer | Purpose |
-|-----------|---------|
-| `ReviewSerializer` | All fields + `customer_name`. `customer` and `created_at` read-only. |
-
-**Views**
-
-| View | Type | Permission | Notes |
-|------|------|-----------|-------|
-| `ReviewViewSet` | `ModelViewSet` | `IsAuthenticatedOrReadOnly` | Filter by `?product=<id>`. Sets `customer` to `request.user` on create. |
-
-**URLs**
-
 | Method | URL | Notes |
 |--------|-----|-------|
-| GET | `/api/reviews/?product=<id>` | List reviews for a product |
+| GET | `/api/reviews/?product=<id>` | List reviews |
 | POST | `/api/reviews/` | Create review |
-| PATCH | `/api/reviews/<id>/` | Update own review |
-| DELETE | `/api/reviews/<id>/` | Delete review |
-
-**Admin:** `ReviewAdmin` — filter by rating.
+| PATCH | `/api/reviews/<id>/` | Update |
+| DELETE | `/api/reviews/<id>/` | Delete |
 
 ---
 
 ### App: `store/`
 
-**Models**
+**Models:** `SellerProfile` (OneToOne User, store_name, bio, banner, location, status, bank_account_details JSONField), `Payout` (FK seller, amount, status, reference, timestamps)
 
-| Model | Key Fields |
-|-------|-----------|
-| `SellerProfile` | OneToOne → `User`. `store_name`, `bio`, `banner` (ImageField), `location`, `status` (choices: `pending / approved / suspended`), `bank_account_details` (JSONField), `created_at`. |
-| `Payout` | FK → `User` (seller). `amount`, `status` (choices: `requested / processing / completed / failed`), `reference`, `requested_at`, `processed_at`. |
-
-**Serializers**
-
-| Serializer | Purpose |
-|-----------|---------|
-| `SellerProfileSerializer` | All fields. `user`, `status`, `created_at` read-only. |
-| `PayoutSerializer` | All fields. `seller`, `status`, `requested_at`, `processed_at` read-only. |
+**Serializers:** `SellerProfileSerializer` includes `user_email`, `user_username` (read-only from user FK).
 
 **Views**
 
-| View | Type | Permission | Notes |
-|------|------|-----------|-------|
-| `SellerProfileViewSet` | `ModelViewSet` | `IsAuthenticatedOrReadOnly` | Only returns `status=approved` profiles publicly. Sets `user` to `request.user` on create. |
-| `PayoutViewSet` | `ModelViewSet` | `IsAuthenticated` | Admin sees all payouts, sellers see own only. |
+`SellerProfileViewSet` — Admin → all profiles (filter with `?status=`). Seller → own + approved. Public → approved only. Custom actions: `my_profile` (seller gets own), `approve`, `reject` (admin only).
+
+`PayoutViewSet` — Admin → all. Seller → own.
 
 **URLs**
 
 | Method | URL | Notes |
 |--------|-----|-------|
-| GET | `/api/store/sellers/` | List approved seller profiles |
-| POST | `/api/store/sellers/` | Create seller profile |
-| GET | `/api/store/sellers/<id>/` | Seller profile detail |
-| GET | `/api/store/payouts/` | List payouts (own or all if admin) |
-| POST | `/api/store/payouts/` | Request a payout |
-
-**Admin:** `SellerProfileAdmin`, `PayoutAdmin` — both with status list filter.
+| GET | `/api/store/sellers/` | List (role-filtered) |
+| GET | `/api/store/sellers/my-profile/` | Get own seller profile |
+| PATCH | `/api/store/sellers/<id>/` | Update profile |
+| PATCH | `/api/store/sellers/<id>/approve/` | Admin approve |
+| PATCH | `/api/store/sellers/<id>/reject/` | Admin reject/suspend |
+| GET | `/api/store/payouts/` | List payouts |
+| POST | `/api/store/payouts/` | Request payout |
 
 ---
 
 ### App: `promotions/`
 
-**Models**
-
-| Model | Key Fields |
-|-------|-----------|
-| `PromoCode` | `code` (unique), `discount_type` (choices: `percentage / fixed`), `discount_value`, `minimum_order`, `max_uses` (nullable), `uses_count`, `valid_from`, `valid_until` (nullable), `is_active`. |
-
-**Serializers**
-
-| Serializer | Purpose |
-|-----------|---------|
-| `PromoCodeSerializer` | All fields. `uses_count` read-only. |
-
-**Views**
-
-| View | Type | Permission | Notes |
-|------|------|-----------|-------|
-| `PromoCodeViewSet` | `ModelViewSet` | `IsAdminOrReadOnly` (custom) | Safe methods require auth; write methods require `role=admin`. Returns active codes only. |
+`PromoCodeViewSet` — Admin sees all codes. Others see only `is_active=True`. Write requires admin. `validate` action validates code + subtotal.
 
 **URLs**
 
 | Method | URL | Notes |
 |--------|-----|-------|
-| GET | `/api/promotions/` | List active promo codes |
-| POST | `/api/promotions/` | Create promo code (admin only) |
-| PATCH | `/api/promotions/<id>/` | Update promo code (admin only) |
-| DELETE | `/api/promotions/<id>/` | Delete promo code (admin only) |
-
-**Admin:** `PromoCodeAdmin` — shows uses count and validity.
+| GET | `/api/promotions/` | List (admin: all; others: active only) |
+| POST | `/api/promotions/` | Create (admin only) |
+| PATCH | `/api/promotions/<id>/` | Update (admin only) |
+| DELETE | `/api/promotions/<id>/` | Delete (admin only) |
+| POST | `/api/promotions/validate/` | Validate code + return discount |
 
 ---
 
 ### App: `notifications/`
 
-**Models**
-
-| Model | Key Fields |
-|-------|-----------|
-| `Notification` | FK → `User` (recipient). `notif_type` (choices: `order / message / payout / announcement / system`). `title`, `body`, `is_read` (default False), `data` (JSONField for extra payload), `created_at`. Ordered by `-created_at`. |
-
-**Serializers**
-
-| Serializer | Purpose |
-|-----------|---------|
-| `NotificationSerializer` | All fields except `recipient`. `id` and `created_at` read-only. |
-
-**Views**
-
-| View | Type | Permission | Notes |
-|------|------|-----------|-------|
-| `NotificationViewSet` | `ModelViewSet` (GET/PATCH/DELETE only — no POST from API) | `IsAuthenticated` | Scoped to `request.user`. Custom action `mark_all_read`. |
-
-**URLs**
-
 | Method | URL | Notes |
 |--------|-----|-------|
-| GET | `/api/notifications/` | List own notifications |
-| PATCH | `/api/notifications/<id>/` | Mark one as read |
-| PATCH | `/api/notifications/mark_all_read/` | Bulk mark all as read |
-| DELETE | `/api/notifications/<id>/` | Delete a notification |
-
-**Admin:** `NotificationAdmin` — filter by type and read status.
+| GET | `/api/notifications/` | Own notifications |
+| PATCH | `/api/notifications/<id>/` | Mark one read |
+| PATCH | `/api/notifications/mark_all_read/` | Bulk mark read |
+| DELETE | `/api/notifications/<id>/` | Delete |
 
 ---
 
 ### App: `core/`
 
-No models or views. Contains only management commands.
+`seed_db` management command — idempotent seeder.
 
-| Command | File | What it does |
-|---------|------|-------------|
-| `seed_db` | `core/management/commands/seed_db.py` | Populates DB with realistic test data. Idempotent — uses `get_or_create` throughout, safe to run multiple times. Prints a summary of created vs skipped records. |
-
-**What `seed_db` creates:**
-
-| Type | Count | Details |
-|------|-------|---------|
-| Admin | 1 | `admin@goldenknot.com` / `admin123` |
-| Sellers | 3 | `seller1-3@test.com` / `test1234` — each with approved `SellerProfile` |
-| Customers | 5 | `customer1-5@test.com` / `test1234` |
-| Categories | 6 | Hand-Knotted Rugs, Kilim Rugs, Cushion Covers, Wall Hangings, Prayer Rugs, Table Runners |
-| Products | 20 | Spread across 3 sellers + 6 categories, all `is_approved=True`, `is_active=True`, detailed Afghan textile descriptions |
-| Reviews | 10 | From customers across 10 products, ratings 3–5, realistic comments |
-| Promo Codes | 2 | `WELCOME10` (10% off, no min), `GOLDEN20` (20% off, min $100) |
-
-**Run:**
-```bash
-python manage.py seed_db
-```
+**What seed_db creates:** 1 admin, 3 sellers (approved), 5 customers, 6 categories, 20 products (all approved+active), 10 reviews, 2 promo codes (WELCOME10, GOLDEN20).
 
 ---
 
-### Backend Config Files
+### Backend Config
 
 | File | Contents |
 |------|----------|
-| `requirements.txt` | `Django==5.0.4`, `djangorestframework==3.15.1`, `djangorestframework-simplejwt==5.3.1`, `django-cors-headers==4.3.1`, `dj-database-url==2.1.0`, `psycopg2-binary==2.9.9`, `python-decouple==3.8`, `Pillow==10.3.0`, `django-storages==1.14.3`, `boto3==1.34.84` |
-| `.env.example` | `SECRET_KEY`, `DEBUG`, `ALLOWED_HOSTS`, `DATABASE_URL`, `CORS_ALLOWED_ORIGINS`, `JWT_ACCESS_TOKEN_LIFETIME_MINUTES`, `JWT_REFRESH_TOKEN_LIFETIME_DAYS`, `USE_S3`, S3 vars |
+| `requirements.txt` | Django 5, DRF 3.15, simplejwt, cors-headers, dj-database-url, psycopg2-binary, python-decouple, Pillow, django-storages, boto3 |
 
 ---
 
@@ -385,25 +252,25 @@ All TypeScript interfaces in one file:
 | Interface / Type | Fields |
 |-----------------|--------|
 | `UserRole` | `'customer' \| 'seller' \| 'admin'` |
-| `User` | id, email, username, role, phone, avatar, created_at |
+| `User` | id, email, username, role, phone, avatar, **is_active**, created_at |
 | `AuthTokens` | access, refresh |
 | `Category` | id, name, slug, description, parent |
 | `ProductImage` | id, image, is_primary, order |
-| `Product` | id, seller, seller_name, category, category_name, name, slug, description, price, stock, is_active, is_approved, location, images, timestamps |
+| `Product` | id, seller, seller_name, category, category_name, category_slug, name, slug, description, price, stock, is_active, is_approved, location, images, avg_rating, review_count, timestamps |
 | `OrderStatus` | union of 7 status strings |
 | `ShippingAddress` | full_name, address_line1, address_line2?, city, country, postal_code, phone |
-| `OrderItem` | id, product, seller, quantity, unit_price, subtotal |
+| `OrderItem` | id, product, product_name, product_slug, seller, seller_name, quantity, unit_price, subtotal |
 | `Order` | id, customer, status, total_price, shipping_address, promo_code, discount_amount, payment_id, payment_status, items, timestamps |
-| `CartItem` | id, product, product_name, quantity, subtotal |
-| `Cart` | id, items, created_at |
+| `CartItem` | id, product, product_name, product_slug, product_price, product_stock, seller_name, product_image, quantity, subtotal |
+| `Cart` | id, items, total, item_count, created_at |
 | `Review` | id, product, customer, customer_name, rating (1–5), comment, created_at |
 | `SellerStatus` | `'pending' \| 'approved' \| 'suspended'` |
-| `SellerProfile` | id, user, store_name, bio, banner, location, status, bank_account_details, created_at |
+| `SellerProfile` | id, user, **user_email**, **user_username**, store_name, bio, banner, location, status, bank_account_details, created_at |
 | `PayoutStatus` | `'requested' \| 'processing' \| 'completed' \| 'failed'` |
 | `Payout` | id, seller, amount, status, reference, requested_at, processed_at |
 | `DiscountType` | `'percentage' \| 'fixed'` |
 | `PromoCode` | id, code, discount_type, discount_value, minimum_order, max_uses, uses_count, valid_from, valid_until, is_active |
-| `NotifType` | `'order' \| 'message' \| 'payout' \| 'announcement' \| 'system'` |
+| `PromoValidation` | id, code, discount_type, discount_value, discount_amount, minimum_order |
 | `Notification` | id, notif_type, title, body, is_read, data, created_at |
 | `PaginatedResponse<T>` | count, next, previous, results |
 
@@ -413,13 +280,16 @@ All TypeScript interfaces in one file:
 
 | File | Functions |
 |------|-----------|
-| `client.ts` | Default export: Axios instance pointed at `VITE_API_URL`. Request interceptor injects `Authorization: Bearer <token>` from localStorage. Response interceptor silently refreshes expired token on 401 then retries the original request. |
-| `auth.ts` | `login(email, password)`, `register(data)`, `refreshToken(refresh)` |
-| `products.ts` | `getProducts(params?)`, `getProduct(idOrSlug)`, `getCategories()`, `createProduct(FormData)`, `updateProduct(id, data)`, `deleteProduct(id)` |
-| `orders.ts` | `getOrders()`, `getOrder(id)`, `createOrder(data)`, `updateOrderStatus(id, status)` |
-| `cart.ts` | `getCart()`, `addToCart(product, quantity)`, `removeCartItem(itemId)` |
-| `reviews.ts` | `getReviews(productId)`, `createReview(data)` |
-| `notifications.ts` | `getNotifications()`, `markAllRead()`, `deleteNotification(id)` |
+| `client.ts` | Axios instance. Request interceptor reads token from localStorage **or sessionStorage**. Response interceptor: 401 → silent refresh, stores back to original storage. |
+| `auth.ts` | `login()`, `register()`, `refreshToken()`, **`fetchCurrentUser()`** |
+| `users.ts` | **NEW** `getUsers()`, `updateUser()`, `changePassword()`, `deactivateUser()`, `activateUser()` |
+| `products.ts` | `getProducts(params?)`, `getProduct()`, `getCategories()`, `createProduct()` (JSON or FormData), `updateProduct(slug, data)`, `deleteProduct(slug)`, **`approveProduct(slug)`**, **`rejectProduct(slug)`** |
+| `orders.ts` | `getOrders(params?)`, `getOrder(id)`, `createOrderFromCart()`, `updateOrderStatus()` |
+| `cart.ts` | `getCart()`, `addToCart()`, `updateCartItem()`, `removeCartItem()` |
+| `reviews.ts` | `getReviews()`, `createReview()` |
+| `store.ts` | **NEW** `getMySellerProfile()`, `getAllSellers()`, `createSellerProfile()`, `updateSellerProfile()`, `approveSellerProfile()`, `rejectSellerProfile()`, `getPayouts()`, `requestPayout()` |
+| `promotions.ts` | `validatePromoCode()`, **`getPromoCodes()`**, **`createPromoCode()`**, **`updatePromoCode()`**, **`deletePromoCode()`** |
+| `notifications.ts` | `getNotifications()`, `markAllRead()`, `deleteNotification()` |
 
 ---
 
@@ -427,8 +297,8 @@ All TypeScript interfaces in one file:
 
 | File | Exports |
 |------|---------|
-| `AuthContext.tsx` | `AuthProvider` — stores `user` and `accessToken`. `login(email, password, rememberMe?)` — if `rememberMe=true` stores tokens in `localStorage`, otherwise `sessionStorage`. Checks both on init. `logout()` clears both storages. `useAuth()` hook. |
-| `CartContext.tsx` | `CartProvider` — tracks `itemCount` (cart badge count), provides `setItemCount`, `incrementCount`, `decrementCount`. `useCart()` hook. |
+| `AuthContext.tsx` | `user: User \| null` — **now populated**: fetched from `/api/users/me/` on login AND on app mount if token exists. `login()`, `logout()`, `refreshUser()`, `isAuthenticated`. `useAuth()` hook. |
+| `CartContext.tsx` | `itemCount`, `setItemCount`, `incrementCount`, `decrementCount`. `useCart()` hook. |
 
 ---
 
@@ -436,7 +306,7 @@ All TypeScript interfaces in one file:
 
 | File | Exports |
 |------|---------|
-| `apiError.ts` | `parseApiError(err)` — returns a flat human-readable string from any DRF error (handles `detail` field and field-level arrays). `parseFieldErrors(err)` — returns a `Record<string, string>` of field → first error message, used to show errors under individual inputs. |
+| `apiError.ts` | `parseApiError(err)`, `parseFieldErrors(err)` |
 
 ---
 
@@ -444,10 +314,14 @@ All TypeScript interfaces in one file:
 
 | File | What it does |
 |------|-------------|
-| `Navbar.tsx` | Fixed black navbar. Logo (gold, left), nav links with animated underline (center, hidden on mobile), right side: search icon, cart icon with count badge, Login/Register buttons or user avatar dropdown (role-aware: links to admin panel / seller dashboard / account). Mobile: hamburger → slide-down menu with auth buttons. Expandable search bar overlay. Click-outside closes user dropdown. |
-| `Footer.tsx` | Black footer. Brand column (description, email, location, social icons), Quick Links column, Sell With Us column (CTA to register as seller). Bottom bar: copyright + "Developed by Habiba Hassan" linking to `https://github.com/ihabiba` in gold on hover. |
-| `ProductCard.tsx` | Product card with textile-inspired gradient placeholder image (built from product color palette + woven SVG overlay), category badge, wishlist toggle (heart), "Add to Cart" button that slides up on hover, gold star rating, seller name, gold price. Calls `useCart().incrementCount()` on add. |
-| `CategoryCard.tsx` | Dark card (`#1C1C1C`) with gold-tinted icon, category name in Playfair Display, item count, arrow on hover. Hover: gold border glow + subtle lift. Links to `/products?category=<slug>`. |
+| `Navbar.tsx` | Fixed black navbar, auth-aware, role-aware dropdown, search overlay, mobile hamburger |
+| `Footer.tsx` | Black footer, brand column, inline SVG social icons, dev credit |
+| `ProductCard.tsx` | Textile gradient placeholder, wishlist toggle, add to cart, real Product type |
+| `CategoryCard.tsx` | Dark card, gold icon, links to /products?category= |
+| `DashboardLayout.tsx` | **NEW** Dark sidebar + main content. Mobile: hamburger drawer. Props: `title`, `subtitle`, `navItems[]`, `activeSection`, `onSectionChange` |
+| `StatCard.tsx` | **NEW** Icon + value + label + optional trend badge |
+| `StatusBadge.tsx` | **NEW** Colored pill for all order/seller/payout/product statuses. Props: `status`, `size`, `showDot` |
+| `ConfirmModal.tsx` | **NEW** Reusable confirmation dialog. Props: `isOpen`, `onClose`, `onConfirm`, `title`, `message`, `confirmLabel`, `loading`, `variant` |
 
 ---
 
@@ -455,17 +329,25 @@ All TypeScript interfaces in one file:
 
 | File | Route | Status |
 |------|-------|--------|
-| `HomePage.tsx` | `/` | **Complete** — Hero, Categories grid, Products grid, Why Us, Mission banner, Newsletter |
-| `ProductsPage.tsx` | `/products` | Stub |
-| `ProductDetailPage.tsx` | `/products/:slug` | Stub |
-| `CartPage.tsx` | `/cart` | Stub |
-| `CheckoutPage.tsx` | `/checkout` | Stub |
-| `LoginPage.tsx` | `/login` | **Complete** — split layout (dark brand panel + form), email + password (show/hide), remember me checkbox (controls localStorage vs sessionStorage), forgot password link, Google placeholder button, API error banner, loading state, link to register |
-| `RegisterPage.tsx` | `/register` | **Complete** — split layout, role toggle cards (Customer/Seller), username + email + phone + password (show/hide) + confirm password, live password strength bar (4 segments), live password match indicator, field-level API errors, auto-login on success, link to login |
-| `AccountPage.tsx` | `/account` | Stub |
-| `OrdersPage.tsx` | `/orders` | Stub |
-| `SellerDashboardPage.tsx` | `/seller/dashboard` | Stub |
-| `AdminDashboardPage.tsx` | `/admin` | Stub |
+| `HomePage.tsx` | `/` | ✅ Complete |
+| `LoginPage.tsx` | `/login` | ✅ Complete |
+| `RegisterPage.tsx` | `/register` | ✅ Complete |
+| `ProductsPage.tsx` | `/products` | ✅ Complete |
+| `ProductDetailPage.tsx` | `/products/:slug` | ✅ Complete |
+| `CartPage.tsx` | `/cart` | ✅ Complete |
+| `CheckoutPage.tsx` | `/checkout` | ✅ Complete |
+| `OrderConfirmationPage.tsx` | `/orders/:orderId/confirmation` | ✅ Complete |
+| `OrdersPage.tsx` | `/orders` | ✅ **New** — tab-filtered list with item previews, count badges |
+| `OrderDetailPage.tsx` | `/orders/:id` | ✅ **New** — status timeline, items, address, totals, reorder + print |
+| `AccountPage.tsx` | `/account` | ✅ **New** — Profile edit, My Orders, Wishlist/Addresses (stubs), Settings (change pw + delete) |
+| `SellerDashboardPage.tsx` | `/seller/dashboard` | ✅ **New** — Overview, Products (CRUD modal), Orders (status update), Earnings + payouts, Store profile |
+| `AdminDashboardPage.tsx` | `/admin` | ✅ **New** — Overview, Users (suspend/activate), Sellers (approve/reject), Products (approve/reject), Orders (status), Promo Codes (full CRUD) |
+
+---
+
+### Toast Notifications
+
+`react-hot-toast` installed. `<Toaster />` mounted in `main.tsx` with dark golden theme. All API mutations across all dashboard pages show `toast.success()` / `toast.error()`.
 
 ---
 
@@ -473,99 +355,73 @@ All TypeScript interfaces in one file:
 
 | File | Purpose |
 |------|---------|
-| `App.tsx` | `BrowserRouter` with layout wrapper (Navbar + `pt-16` content area + Footer). All 11 routes. |
-| `main.tsx` | Mounts app; wraps `<App>` in `<AuthProvider>` + `<CartProvider>` |
-| `src/index.css` | Tailwind v4 import + CSS vars (`--gold`, `--charcoal`, `--off-white`) + `.font-display` class (Google Fonts moved to `index.html`) |
-| `index.html` | Google Fonts loaded via `<link>` tags (Playfair Display + Inter) — avoids CSS `@import` ordering conflicts with Tailwind v4 |
-| `vite.config.ts` | Registers `@vitejs/plugin-react` and `@tailwindcss/vite` |
-| `.env.example` | `VITE_API_URL=http://localhost:8000/api` |
-
-### HomePage sections (mock data, ready to swap for API)
-
-| Section | Content |
-|---------|---------|
-| **Hero** | Dark full-screen, Playfair Display headline, gold italic accent, textile mosaic SVG grid (right), Shop Now + Become a Seller CTAs, 4 stat counters |
-| **Categories** | 6 cards: Hand-Knotted Rugs, Kilim Rugs, Cushion Covers, Wall Hangings, Prayer Rugs, Table Runners — each with lucide icon + item count |
-| **Featured Products** | 8 mock products with textile gradient placeholders, ratings, prices, wishlist + add-to-cart |
-| **Why Golden Knot** | 3 cards: Authenticity Guaranteed, Global Delivery, Direct from Artisans |
-| **Mission Banner** | Dark section with mission copy, two CTAs |
-| **Newsletter** | Email subscribe form (frontend-only for now) |
+| `App.tsx` | All 13 routes including new `/orders/:id` |
+| `main.tsx` | Mounts app with `AuthProvider` + `CartProvider` + `<Toaster />` |
+| `src/index.css` | Tailwind v4 import + CSS vars + `.font-display` |
+| `index.html` | Google Fonts via `<link>` (Playfair Display + Inter) |
+| `vite.config.ts` | `@vitejs/plugin-react` + `@tailwindcss/vite` |
 
 ---
 
 ## What's Done vs. What's Next
 
-### Done
-- [x] Full monorepo structure (`backend/` + `frontend/`)
+### Done ✅
+- [x] Full monorepo structure
 - [x] All 8 Django apps with models, serializers, views, urls, admin
-- [x] Custom User model with role-based access
-- [x] JWT authentication (obtain + refresh)
-- [x] PostgreSQL via `DATABASE_URL` (Supabase-ready)
+- [x] JWT auth (login, register, token refresh interceptor)
+- [x] PostgreSQL via DATABASE_URL (Supabase-ready)
 - [x] CORS configured
-- [x] All TypeScript interfaces matching backend models
-- [x] Axios client with JWT interceptors + silent token refresh
-- [x] API modules for every domain
-- [x] Auth context with login/logout + rememberMe (localStorage vs sessionStorage)
+- [x] All TypeScript interfaces (including `is_active`, `user_email`, `user_username`)
+- [x] Axios client: both localStorage + sessionStorage token handling, silent refresh
+- [x] API modules for every domain (auth, users, products, orders, cart, reviews, store, promotions, notifications)
+- [x] AuthContext: **user now fetched on login AND on app mount** — always populated when authenticated
 - [x] Cart context with item count badge
-- [x] `src/utils/apiError.ts` — DRF error parsing utilities
-- [x] React Router with all 11 routes
-- [x] Tailwind CSS v4 + Google Fonts via `index.html` (Playfair Display + Inter)
-- [x] Navbar — responsive, auth-aware, search overlay, user dropdown
-- [x] Footer — brand, links, inline SVG social icons, developer credit
-- [x] ProductCard — updated to use real `Product` type, API-connected cart, gradient from product ID, stock badge, real image support
-- [x] CategoryCard component
-- [x] HomePage — complete with 6 sections, mock data typed as real `Product[]`
-- [x] LoginPage — fully functional, connected to real API, split luxury layout
-- [x] RegisterPage — fully functional, connected to real API, split luxury layout, auto-login on success
-- [x] `core` app + `seed_db` management command — 20 products, 3 sellers, 5 customers, 1 admin, 6 categories, 10 reviews, 2 promo codes
-- [x] Backend: `avg_rating` + `review_count` annotations on Product queryset (single DB query)
-- [x] Backend: `category_slug` added to ProductSerializer
-- [x] Backend: `lookup_field = 'slug'` — `/api/products/<slug>/` works
-- [x] Backend: category filter (`?category=<slug>`), price filter (`?min_price=`, `?max_price=`)
-- [x] `ProductsPage` — real API data, debounced search (300ms), category/price/sort filters, URL-synced params, loading skeletons, empty state, pagination, mobile filter drawer
-- [x] `ProductDetailPage` — image gallery (real images + gradient placeholder), product info, quantity selector, add to cart API, wishlist toggle, Description + Reviews tabs, rating breakdown chart, write-a-review form (star selector, authenticated only), related products row
-- [x] Navbar — fixed: now uses `isAuthenticated` alone (user profile null bug resolved), logout visible and working on desktop + mobile
-- [x] Backend: CartItemSerializer enhanced — `product_slug`, `product_price`, `product_stock`, `seller_name`, `product_image` fields added
-- [x] Backend: CartSerializer — `total` and `item_count` computed fields added
-- [x] Backend: CartItemView — supports PATCH (quantity update) and DELETE (remove), both return updated Cart
-- [x] Backend: OrderItemSerializer — `product_name`, `product_slug`, `seller_name` added for confirmation page
-- [x] Backend: `POST /api/orders/from-cart/` — atomic order creation from cart, creates OrderItems, updates promo uses_count, clears cart
-- [x] Backend: `POST /api/promotions/validate/` — validates code + subtotal, returns discount amount
-- [x] `src/api/cart.ts` — `updateCartItem()` and `removeCartItem()` return `Cart`
-- [x] `src/api/orders.ts` — `createOrderFromCart()` added
-- [x] `src/api/promotions.ts` — `validatePromoCode()` added (new file)
-- [x] `CartPage` — real cart API, optimistic quantity updates, remove items, promo code validation + removal, sticky order summary, empty state, loading skeletons
-- [x] `CheckoutPage` — protected route, 3-step flow (Shipping → Review → Payment), smooth step transitions, address form with validation, sticky order summary, test mode order placement
-- [x] `OrderConfirmationPage` — success animation, order details, items list, totals, estimated delivery, print support, CTAs to orders list and shopping
-- [x] `PromoValidation` type added to `src/types/index.ts`
-- [x] `CartItem` and `Cart` types updated with new fields
-- [x] `OrderItem` type updated with `product_name`, `product_slug`, `seller_name`
+- [x] `react-hot-toast` installed and configured globally
+- [x] React Router with all 13 routes
+- [x] Tailwind CSS v4 + Google Fonts (Playfair Display + Inter)
+- [x] Navbar, Footer, ProductCard, CategoryCard components
+- [x] Shared dashboard components: DashboardLayout, StatCard, StatusBadge, ConfirmModal
+- [x] HomePage — complete with 6 sections
+- [x] LoginPage — fully functional, live API
+- [x] RegisterPage — fully functional, live API, auto-login
+- [x] ProductsPage — real API, filters, search, pagination
+- [x] ProductDetailPage — gallery, cart, reviews
+- [x] CartPage — real cart API, promo code, optimistic updates
+- [x] CheckoutPage — 3-step flow, address validation
+- [x] OrderConfirmationPage — success animation, print support
+- [x] **OrdersPage** — tab-filtered list, item thumbnails, count badges
+- [x] **OrderDetailPage** — visual status timeline, items, reorder, print invoice
+- [x] **AccountPage** — profile edit, orders list, settings (change password), delete account confirm
+- [x] **SellerDashboardPage** — overview stats, product CRUD modal, order status updates, earnings + payout request, store profile edit
+- [x] **AdminDashboardPage** — overview, user management (suspend/activate), seller approval, product approval, order management, promo code CRUD
+- [x] Backend: `GET /api/users/me/` — returns authenticated user
+- [x] Backend: `PATCH /api/users/<id>/change-password/` — with old_password verification
+- [x] Backend: `PATCH /api/users/<id>/deactivate/` + `activate/` — admin only
+- [x] Backend: `PATCH /api/store/sellers/<id>/approve/` + `reject/` — admin only
+- [x] Backend: `GET /api/store/sellers/my-profile/` — own seller profile
+- [x] Backend: `PATCH /api/products/<slug>/approve/` + `reject/` — admin only
+- [x] Backend: ProductViewSet queryset — admin sees all; seller sees own + public; `?seller_only=true` for own only
+- [x] Backend: SellerProfileViewSet queryset — admin sees all (filter `?status=`); seller sees own + approved
+- [x] Backend: PromoCodeViewSet — admin sees all codes; others see active only
+- [x] Backend: OrderViewSet — `?status=` filter param added
+- [x] Backend: UserSerializer — `is_active` field added
+- [x] Backend: SellerProfileSerializer — `user_email`, `user_username` added
 - [x] `tsc --noEmit` → 0 errors
 - [x] `manage.py check` → 0 issues
-- [x] Tested against live Django backend (login 200/401, token refresh confirmed)
 
 ### To Build Next
-- [ ] `AccountPage` — profile info, edit profile, order history
-- [ ] `AccountPage` — profile info, order history
-- [ ] `SellerDashboardPage` — product management, order list, earnings
-- [ ] `AdminDashboardPage` — analytics, seller approval, product moderation
-- [ ] Backend: Approve/reject product endpoint (admin action)
-- [ ] Backend: Approve/suspend seller endpoint (admin action)
-- [ ] Backend: Apply promo code logic at checkout
-- [ ] Backend: HesabPay payment gateway integration
-- [ ] Migrations: run `python manage.py makemigrations && migrate` against Supabase
 - [ ] Notification bell in Navbar (live count from API)
+- [ ] OrdersPage / AccountPage: paginate large order lists
 - [ ] Wishlist page
 - [ ] About, Contact, FAQ static pages
+- [ ] Backend: HesabPay payment gateway integration
+- [ ] Migrations: run `python manage.py makemigrations && migrate` against Supabase (if schema changed)
 - [ ] Lengthen `SECRET_KEY` in `.env` to 50+ chars before production
+- [ ] Seller dashboard: image upload for products
+- [ ] Admin dashboard: pagination for large tables
 
 ### Later
-- [ ] Order tracking timeline
-- [ ] Payout request flow for sellers
-- [ ] Notification bell component with live count
-
-### Phase 3
-- [ ] Multi-language (English, Dari, Pashto)
+- [ ] Multi-language (English, Dari, Pashto) via Google Translate widget
 - [ ] Multi-currency display
 - [ ] SEO meta tags + sitemap
 - [ ] Performance tuning + image optimization

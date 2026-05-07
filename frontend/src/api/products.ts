@@ -1,7 +1,7 @@
 import api from './client';
 import type { Product, Category, PaginatedResponse } from '../types';
 
-export const getProducts = (params?: Record<string, string | number>) =>
+export const getProducts = (params?: Record<string, string | number | boolean>) =>
   api.get<PaginatedResponse<Product>>('/products/', { params });
 
 export const getProduct = (idOrSlug: string | number) =>
@@ -10,13 +10,19 @@ export const getProduct = (idOrSlug: string | number) =>
 export const getCategories = () =>
   api.get<PaginatedResponse<Category>>('/products/categories/');
 
-export const createProduct = (data: FormData) =>
-  api.post<Product>('/products/', data, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  });
+export const createProduct = (data: FormData | Record<string, string | number | boolean>) =>
+  data instanceof FormData
+    ? api.post<Product>('/products/', data, { headers: { 'Content-Type': 'multipart/form-data' } })
+    : api.post<Product>('/products/', data);
 
-export const updateProduct = (id: number, data: Partial<Product>) =>
-  api.patch<Product>(`/products/${id}/`, data);
+export const updateProduct = (slug: string, data: Partial<Product> | FormData | Record<string, string | number | boolean>) =>
+  api.patch<Product>(`/products/${slug}/`, data);
 
-export const deleteProduct = (id: number) =>
-  api.delete(`/products/${id}/`);
+export const deleteProduct = (slug: string) =>
+  api.delete(`/products/${slug}/`);
+
+export const approveProduct = (slug: string) =>
+  api.patch<{ detail: string; slug: string; is_approved: boolean }>(`/products/${slug}/approve/`);
+
+export const rejectProduct = (slug: string) =>
+  api.patch<{ detail: string; slug: string; is_approved: boolean }>(`/products/${slug}/reject/`);

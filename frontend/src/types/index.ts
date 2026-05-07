@@ -9,6 +9,7 @@ export interface User {
   role: UserRole;
   phone: string;
   avatar: string | null;
+  is_active: boolean;
   created_at: string;
 }
 
@@ -157,6 +158,8 @@ export type SellerStatus = 'pending' | 'approved' | 'suspended';
 export interface SellerProfile {
   id: number;
   user: number;
+  user_email: string;
+  user_username: string;
   store_name: string;
   bio: string;
   banner: string | null;

@@ -15,11 +15,19 @@ class OrderViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         qs = Order.objects.prefetch_related("items__product", "items__seller")
+
         if user.role == "admin":
-            return qs.select_related("customer")
-        if user.role == "seller":
-            return qs.filter(items__seller=user).distinct()
-        return qs.filter(customer=user)
+            qs = qs.select_related("customer")
+        elif user.role == "seller":
+            qs = qs.filter(items__seller=user).distinct()
+        else:
+            qs = qs.filter(customer=user)
+
+        order_status = self.request.query_params.get("status")
+        if order_status:
+            qs = qs.filter(status=order_status)
+
+        return qs
 
     def perform_create(self, serializer):
         serializer.save(customer=self.request.user)
@@ -30,7 +38,6 @@ class OrderViewSet(viewsets.ModelViewSet):
         from cart.models import Cart, CartItem
         from promotions.models import PromoCode
 
-        # ── Validate cart ────────────────────────────────────────────────────
         try:
             cart = Cart.objects.prefetch_related(
                 "items__product__seller"
@@ -48,7 +55,6 @@ class OrderViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # ── Validate payload ─────────────────────────────────────────────────
         shipping_address = request.data.get("shipping_address")
         if not shipping_address or not isinstance(shipping_address, dict):
             return Response(
@@ -62,11 +68,9 @@ class OrderViewSet(viewsets.ModelViewSet):
         except Exception:
             discount_amount = Decimal("0.00")
 
-        # ── Compute totals ───────────────────────────────────────────────────
         subtotal = sum(item.quantity * item.product.price for item in cart_items)
         total = max(subtotal - discount_amount, Decimal("0.00"))
 
-        # ── Create order atomically ──────────────────────────────────────────
         with transaction.atomic():
             order = Order.objects.create(
                 customer=request.user,
@@ -94,10 +98,8 @@ class OrderViewSet(viewsets.ModelViewSet):
                     uses_count=F("uses_count") + 1
                 )
 
-            # Clear cart
             CartItem.objects.filter(cart=cart).delete()
 
-        # Refetch with all related data for serialization
         order = Order.objects.prefetch_related(
             "items__product", "items__seller"
         ).get(pk=order.pk)

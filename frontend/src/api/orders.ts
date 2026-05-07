@@ -1,8 +1,8 @@
 import api from './client';
 import type { Order, PaginatedResponse, ShippingAddress } from '../types';
 
-export const getOrders = () =>
-  api.get<PaginatedResponse<Order>>('/orders/');
+export const getOrders = (params?: Record<string, string | number>) =>
+  api.get<PaginatedResponse<Order>>('/orders/', { params });
 
 export const getOrder = (id: number) =>
   api.get<Order>(`/orders/${id}/`);
