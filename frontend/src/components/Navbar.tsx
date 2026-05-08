@@ -328,8 +328,10 @@ export default function Navbar() {
                   />
                   <button
                     onClick={() => {
-                      const sel = document.querySelector<HTMLSelectElement>('#google_translate_element select');
-                      if (sel) { sel.value = ''; sel.dispatchEvent(new Event('change')); }
+                      // Clear the googtrans cookie — same mechanism as Google's own "Show original" bar
+                      document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/';
+                      document.cookie = `googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.${window.location.hostname}`;
+                      window.location.reload();
                     }}
                     className="w-full text-[11px] text-gray-500 hover:text-[#C9A84C] border border-white/10 hover:border-[#C9A84C]/30 rounded-lg py-1.5 transition-colors"
                   >
