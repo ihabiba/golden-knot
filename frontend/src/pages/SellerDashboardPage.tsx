@@ -770,6 +770,7 @@ function SellerOrdersSection() {
             onClose={() => setProfileOrder(null)}
           />
         )}
+        </>
       )}
 
       {/* Tracking info modal — shown when seller marks an order as shipped */}
