@@ -1,13 +1,5 @@
-import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Mail, MapPin } from 'lucide-react';
-
-declare global {
-  interface Window {
-    googleTranslateElementInit?: () => void;
-    google?: { translate: { TranslateElement: new (opts: object, el: string) => void } };
-  }
-}
 
 const quickLinks = [
   { label: 'About Us', to: '/about' },
@@ -51,23 +43,6 @@ const socialLinks = [
 ];
 
 export default function Footer() {
-  useEffect(() => {
-    if (document.getElementById('google-translate-script')) return;
-
-    window.googleTranslateElementInit = () => {
-      if (!window.google) return;
-      new window.google.translate.TranslateElement(
-        { pageLanguage: 'en', layout: 0, autoDisplay: false },
-        'google_translate_element',
-      );
-    };
-
-    const script = document.createElement('script');
-    script.id = 'google-translate-script';
-    script.src = 'https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit';
-    script.async = true;
-    document.body.appendChild(script);
-  }, []);
 
   return (
     <footer className="bg-black text-white">
@@ -148,15 +123,6 @@ export default function Footer() {
               Become a Seller
             </Link>
           </div>
-        </div>
-
-        {/* Google Translate */}
-        <div className="border-t border-white/5 py-4 flex items-center gap-3">
-          <span className="text-[10px] uppercase tracking-widest text-gray-600 shrink-0">Translate</span>
-          <div
-            id="google_translate_element"
-            className="[&_.goog-te-gadget]:text-[11px] [&_.goog-te-gadget]:text-gray-500 [&_select]:bg-transparent [&_select]:text-gray-400 [&_select]:text-xs [&_select]:border-none [&_select]:outline-none [&_select]:cursor-pointer [&_.goog-logo-link]:hidden [&_.goog-te-gadget-icon]:hidden"
-          />
         </div>
 
         {/* Bottom bar */}

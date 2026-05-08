@@ -3,12 +3,19 @@ import { Link, NavLink, useNavigate } from 'react-router-dom';
 import {
   Search, ShoppingCart, Menu, X, ChevronDown,
   LayoutDashboard, Package, LogOut, User, ShieldCheck,
-  Bell, CheckCheck,
+  Bell, CheckCheck, Globe,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { getNotifications, markAllRead } from '../api/notifications';
 import type { Notification } from '../types';
+
+declare global {
+  interface Window {
+    googleTranslateElementInit?: () => void;
+    google?: { translate: { TranslateElement: new (opts: object, el: string) => void } };
+  }
+}
 
 export default function Navbar() {
   const { isAuthenticated, user, logout } = useAuth();
@@ -19,14 +26,33 @@ export default function Navbar() {
   const [searchOpen, setSearchOpen]     = useState(false);
   const [searchQuery, setSearchQuery]   = useState('');
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const [notifOpen, setNotifOpen]       = useState(false);
+  const [notifOpen, setNotifOpen]         = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [unreadCount, setUnreadCount]   = useState(0);
-  const [markingRead, setMarkingRead]   = useState(false);
+  const [unreadCount, setUnreadCount]     = useState(0);
+  const [markingRead, setMarkingRead]     = useState(false);
+  const [translateOpen, setTranslateOpen] = useState(false);
 
-  const userMenuRef = useRef<HTMLDivElement>(null);
-  const notifRef    = useRef<HTMLDivElement>(null);
-  const searchRef   = useRef<HTMLInputElement>(null);
+  const userMenuRef   = useRef<HTMLDivElement>(null);
+  const notifRef      = useRef<HTMLDivElement>(null);
+  const translateRef  = useRef<HTMLDivElement>(null);
+  const searchRef     = useRef<HTMLInputElement>(null);
+
+  // Initialize Google Translate once on mount
+  useEffect(() => {
+    if (document.getElementById('google-translate-script')) return;
+    window.googleTranslateElementInit = () => {
+      if (!window.google) return;
+      new window.google.translate.TranslateElement(
+        { pageLanguage: 'en', layout: 0, autoDisplay: false },
+        'google_translate_element',
+      );
+    };
+    const script = document.createElement('script');
+    script.id = 'google-translate-script';
+    script.src = 'https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit';
+    script.async = true;
+    document.body.appendChild(script);
+  }, []);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -35,6 +61,9 @@ export default function Navbar() {
       }
       if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
         setNotifOpen(false);
+      }
+      if (translateRef.current && !translateRef.current.contains(e.target as Node)) {
+        setTranslateOpen(false);
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
@@ -269,6 +298,34 @@ export default function Navbar() {
                 )}
               </div>
             )}
+
+            {/* Language / Google Translate */}
+            <div className="relative" ref={translateRef}>
+              <button
+                onClick={() => setTranslateOpen((o) => !o)}
+                className={`p-2 transition-colors duration-200 rounded-full hover:bg-white/5 ${translateOpen ? 'text-[#C9A84C]' : 'text-gray-300 hover:text-[#C9A84C]'}`}
+                aria-label="Translate page"
+              >
+                <Globe size={19} />
+              </button>
+
+              {translateOpen && (
+                <div className="absolute right-0 top-full mt-2 w-64 bg-[#111111] rounded-xl shadow-2xl border border-white/10 overflow-hidden z-50">
+                  <div className="px-4 py-3 border-b border-white/10">
+                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Translate Page</p>
+                  </div>
+                  <div className="px-4 py-3">
+                    <p className="text-[11px] text-gray-500 mb-3">
+                      Select a language to translate this page.
+                    </p>
+                    <div
+                      id="google_translate_element"
+                      className="[&_.goog-te-gadget]:text-[11px] [&_.goog-te-gadget-simple]:bg-transparent [&_.goog-te-gadget-simple]:border-[#C9A84C]/30 [&_.goog-te-gadget-simple]:rounded-lg [&_.goog-te-gadget-simple]:px-3 [&_.goog-te-gadget-simple]:py-2 [&_.goog-logo-link]:hidden [&_.goog-te-gadget-icon]:hidden [&_select]:w-full [&_select]:bg-[#1c1c1c] [&_select]:text-gray-300 [&_select]:text-xs [&_select]:rounded-lg [&_select]:px-3 [&_select]:py-2 [&_select]:border [&_select]:border-white/15 [&_select]:outline-none [&_select]:cursor-pointer"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
 
             {/* Auth — desktop */}
             <div className="hidden md:flex items-center gap-2 ml-2">

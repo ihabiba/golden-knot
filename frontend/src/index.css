@@ -55,3 +55,25 @@ html { scroll-behavior: smooth; }
 .animate-step-in {
   animation: stepIn 0.25s ease forwards;
 }
+
+/* Suppress Google Translate banner bar — keeps translations active */
+.goog-te-banner-frame { display: none !important; }
+.skiptranslate iframe  { display: none !important; }
+body                   { top: 0px !important; }
+#goog-gt-tt            { display: none !important; }
+.goog-te-balloon-frame { display: none !important; }
+
+/* Style the Google Translate select to match dark navbar theme */
+#goog-translate-select {
+  background: transparent;
+  color: #d1d5db;
+  font-size: 12px;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  max-width: 160px;
+}
+#goog-translate-select option {
+  background: #1c1c1c;
+  color: #f5f0e8;
+}

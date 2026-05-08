@@ -104,5 +104,29 @@ class OrderViewSet(viewsets.ModelViewSet):
             "items__product", "items__seller"
         ).get(pk=order.pk)
 
+        # Notify customer
+        from notifications.models import Notification
+        Notification.objects.create(
+            recipient=request.user,
+            notif_type="order",
+            title=f"Order #{order.id} placed",
+            body=f"Your order for {order.items.count()} item(s) has been placed and is being processed.",
+            data={"order_id": order.id},
+        )
+
+        # Notify each unique seller
+        seen_sellers = set()
+        for item in order.items.all():
+            if item.seller_id not in seen_sellers:
+                seen_sellers.add(item.seller_id)
+                seller_items = [i for i in order.items.all() if i.seller_id == item.seller_id]
+                Notification.objects.create(
+                    recipient=item.seller,
+                    notif_type="order",
+                    title=f"New order — #{order.id}",
+                    body=f"You have {len(seller_items)} new item(s) in Order #{order.id} from {request.user.username}.",
+                    data={"order_id": order.id},
+                )
+
         serializer = OrderSerializer(order, context={"request": request})
         return Response(serializer.data, status=status.HTTP_201_CREATED)

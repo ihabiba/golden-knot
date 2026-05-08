@@ -32,7 +32,7 @@ const VALUES = [
 ];
 
 const TEAM = [
-  { name: 'Habiba Hassan', role: 'Founder & Developer', initial: 'H' },
+  { name: 'Habiba Hassan', role: 'Full-Stack Developer & Platform Architect', initial: 'H' },
 ];
 
 export default function AboutPage() {
