@@ -84,7 +84,12 @@ export default function Navbar() {
   useEffect(() => {
     fetchNotifs();
     const interval = setInterval(fetchNotifs, 60000);
-    return () => clearInterval(interval);
+    // Re-fetch immediately when an order is placed (dispatched by CheckoutPage)
+    window.addEventListener('goldenknotOrderPlaced', fetchNotifs);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('goldenknotOrderPlaced', fetchNotifs);
+    };
   }, [fetchNotifs]);
 
   const handleMarkAllRead = async () => {
@@ -309,22 +314,19 @@ export default function Navbar() {
                 <Globe size={19} />
               </button>
 
-              {translateOpen && (
-                <div className="absolute right-0 top-full mt-2 w-64 bg-[#111111] rounded-xl shadow-2xl border border-white/10 overflow-hidden z-50">
-                  <div className="px-4 py-3 border-b border-white/10">
-                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Translate Page</p>
-                  </div>
-                  <div className="px-4 py-3">
-                    <p className="text-[11px] text-gray-500 mb-3">
-                      Select a language to translate this page.
-                    </p>
-                    <div
-                      id="google_translate_element"
-                      className="[&_.goog-te-gadget]:text-[11px] [&_.goog-te-gadget-simple]:bg-transparent [&_.goog-te-gadget-simple]:border-[#C9A84C]/30 [&_.goog-te-gadget-simple]:rounded-lg [&_.goog-te-gadget-simple]:px-3 [&_.goog-te-gadget-simple]:py-2 [&_.goog-logo-link]:hidden [&_.goog-te-gadget-icon]:hidden [&_select]:w-full [&_select]:bg-[#1c1c1c] [&_select]:text-gray-300 [&_select]:text-xs [&_select]:rounded-lg [&_select]:px-3 [&_select]:py-2 [&_select]:border [&_select]:border-white/15 [&_select]:outline-none [&_select]:cursor-pointer"
-                    />
-                  </div>
+              {/* Dropdown — always in DOM so Google Translate can initialize into it */}
+              <div className={`absolute right-0 top-full mt-2 w-64 bg-[#111111] rounded-xl shadow-2xl border border-white/10 overflow-hidden z-50 ${translateOpen ? 'block' : 'hidden'}`}>
+                <div className="px-4 py-3 border-b border-white/10">
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Translate Page</p>
                 </div>
-              )}
+                <div className="px-4 py-3">
+                  <p className="text-[11px] text-gray-500 mb-2">Select a language:</p>
+                  <div
+                    id="google_translate_element"
+                    className="[&_.goog-te-gadget]:!m-0 [&_.goog-logo-link]:hidden [&_.goog-te-gadget-icon]:hidden [&_select]:w-full [&_select]:bg-[#1c1c1c] [&_select]:text-gray-300 [&_select]:text-xs [&_select]:rounded-lg [&_select]:px-3 [&_select]:py-2 [&_select]:border [&_select]:border-white/15 [&_select]:outline-none [&_select]:cursor-pointer"
+                  />
+                </div>
+              </div>
             </div>
 
             {/* Auth — desktop */}

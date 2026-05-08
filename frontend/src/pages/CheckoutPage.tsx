@@ -303,6 +303,7 @@ export default function CheckoutPage() {
         discount_amount: appliedPromo?.discount_amount ?? '0.00',
       });
       setItemCount(0);
+      window.dispatchEvent(new CustomEvent('goldenknotOrderPlaced'));
       navigate(`/orders/${res.data.id}/confirmation`);
     } catch (err) {
       setPlaceError(parseApiError(err));
