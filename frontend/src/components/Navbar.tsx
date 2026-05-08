@@ -319,12 +319,21 @@ export default function Navbar() {
                 <div className="px-4 py-3 border-b border-white/10">
                   <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Translate Page</p>
                 </div>
-                <div className="px-4 py-3">
-                  <p className="text-[11px] text-gray-500 mb-2">Select a language:</p>
+                <div className="px-4 py-3 space-y-3">
+                  <p className="text-[11px] text-gray-500">Select a language:</p>
                   <div
                     id="google_translate_element"
                     className="[&_.goog-te-gadget]:!m-0 [&_.goog-logo-link]:hidden [&_.goog-te-gadget-icon]:hidden [&_select]:w-full [&_select]:bg-[#1c1c1c] [&_select]:text-gray-300 [&_select]:text-xs [&_select]:rounded-lg [&_select]:px-3 [&_select]:py-2 [&_select]:border [&_select]:border-white/15 [&_select]:outline-none [&_select]:cursor-pointer"
                   />
+                  <button
+                    onClick={() => {
+                      const sel = document.querySelector<HTMLSelectElement>('#google_translate_element select');
+                      if (sel) { sel.value = ''; sel.dispatchEvent(new Event('change')); }
+                    }}
+                    className="w-full text-[11px] text-gray-500 hover:text-[#C9A84C] border border-white/10 hover:border-[#C9A84C]/30 rounded-lg py-1.5 transition-colors"
+                  >
+                    Restore Original (English)
+                  </button>
                 </div>
               </div>
             </div>
