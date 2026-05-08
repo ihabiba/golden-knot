@@ -283,8 +283,8 @@ All TypeScript interfaces in one file:
 | `Product` | id, seller, seller_name, category, category_name, category_slug, name, slug, description, price, stock, is_active, is_approved, location, images, avg_rating, review_count, timestamps |
 | `OrderStatus` | union of 7 status strings |
 | `ShippingAddress` | full_name, address_line1, address_line2?, city, country, postal_code, phone |
-| `OrderItem` | id, product, product_name, product_slug, seller, seller_name, quantity, unit_price, subtotal |
-| `Order` | id, customer, status, total_price, shipping_address, promo_code, discount_amount, payment_id, payment_status, items, timestamps |
+| `OrderItem` | id, product, product_name, product_slug, **product_image**, seller, seller_name, quantity, unit_price, subtotal |
+| `Order` | id, customer, status, total_price, shipping_address, promo_code, discount_amount, payment_id, payment_status, **tracking_number**, **shipping_carrier**, items, timestamps |
 | `CartItem` | id, product, product_name, product_slug, product_price, product_stock, seller_name, product_image, quantity, subtotal |
 | `Cart` | id, items, total, item_count, created_at |
 | `Review` | id, product, customer, customer_name, rating (1–5), comment, created_at |
@@ -307,8 +307,8 @@ All TypeScript interfaces in one file:
 | `client.ts` | Axios instance. Request interceptor reads token from localStorage **or sessionStorage**. Response interceptor: 401 → silent refresh, stores back to original storage. |
 | `auth.ts` | `login()`, `register()`, `refreshToken()`, `fetchCurrentUser()` |
 | `users.ts` | `getUsers()`, `updateUser()`, `changePassword()`, `deactivateUser()`, `activateUser()` |
-| `products.ts` | `getProducts(params?)`, `getProduct()`, `getCategories()`, `createProduct()`, `updateProduct(slug)`, `deleteProduct(slug)`, `approveProduct(slug)`, `rejectProduct(slug)` |
-| `orders.ts` | `getOrders(params?)`, `getOrder(id)`, `createOrderFromCart()`, `updateOrderStatus()` |
+| `products.ts` | `getProducts(params?)`, `getProduct()`, `getCategories()`, `createProduct()`, `updateProduct(slug)`, `deleteProduct(slug)`, `approveProduct(slug)`, `rejectProduct(slug)`, **`uploadProductImage(slug, file, isPrimary)`**, **`deleteProductImage(slug, imageId)`** |
+| `orders.ts` | `getOrders(params?)`, `getOrder(id)`, `createOrderFromCart()`, `updateOrderStatus(id, {status, tracking_number?, shipping_carrier?})` |
 | `cart.ts` | `getCart()`, `addToCart()`, `updateCartItem()`, `removeCartItem()` |
 | `reviews.ts` | `getReviews()`, `createReview()` |
 | `store.ts` | `getMySellerProfile()`, `getAllSellers()`, `createSellerProfile()`, `updateSellerProfile()`, `approveSellerProfile()`, `rejectSellerProfile()`, `getPayouts()`, `requestPayout()` |
@@ -459,9 +459,26 @@ All TypeScript interfaces in one file:
 - [x] App.tsx: 19 routes total (was 13)
 - [x] `tsc --noEmit` → 0 errors
 
+### Done ✅ (this batch — image storage, tracking, fulfillment)
+- [x] Backend: Cloudinary integration — `USE_CLOUDINARY=True` in `.env` activates `django-cloudinary-storage`
+- [x] Backend: `POST /api/products/<slug>/upload-image/` — multipart image upload, auto-sets primary
+- [x] Backend: `DELETE /api/products/<slug>/images/<id>/` — remove image, auto-promotes next primary
+- [x] Backend: `Order.tracking_number` + `Order.shipping_carrier` fields, migration applied
+- [x] Backend: `OrderItemSerializer.product_image` — primary image URL included in every order item
+- [x] Backend: `UserSerializer` passes `request` context → absolute avatar URLs
+- [x] Frontend: `SellerDashboardPage` ProductModal — image upload zone, preview grid, primary star, delete per-image
+- [x] Frontend: `SellerDashboardPage` Orders — "Shipped" triggers tracking modal (carrier + number)
+- [x] Frontend: `AccountPage` ProfileSection — real avatar display, click-to-upload with spinner
+- [x] Frontend: `AccountPage` Delete Account — calls `deactivateUser()` + `logout()` + navigates home
+- [x] Frontend: `OrderDetailPage` — gold tracking info card with copy button
+- [x] Frontend: `OrderDetailPage` — real product images (falls back to gradient)
+- [x] Frontend: `OrderDetailPage` — reorder: sequential adds, reports failures per-item, updates cart count
+- [x] `api/products.ts`: `uploadProductImage`, `deleteProductImage`
+- [x] `api/orders.ts`: `updateOrderStatus` accepts `tracking_number` + `shipping_carrier`
+- [x] `tsc --noEmit` → 0 errors, `manage.py check` → 0 issues
+
 ### To Build Next
 - [ ] Backend: HesabPay payment gateway integration
-- [ ] Seller dashboard: image upload for products
 - [ ] Admin dashboard: pagination for large tables
 - [ ] OrdersPage / AccountPage: paginate large order lists
 - [ ] Lengthen `SECRET_KEY` in `.env` to 50+ chars before production
