@@ -8,6 +8,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { getNotifications, markAllRead } from '../api/notifications';
+import { mediaUrl } from '../utils/mediaUrl';
 import type { Notification } from '../types';
 
 declare global {
@@ -348,7 +349,7 @@ export default function Navbar() {
                   >
                     <span className="w-8 h-8 rounded-full bg-[#C9A84C] text-black font-semibold text-sm flex items-center justify-center shrink-0 overflow-hidden">
                       {user?.avatar
-                        ? <img src={user.avatar} alt="avatar" className="w-full h-full object-cover" />
+                        ? <img src={mediaUrl(user.avatar)!} alt="avatar" className="w-full h-full object-cover" />
                         : getInitials()}
                     </span>
                     <ChevronDown size={14} className={`transition-transform duration-200 ${userMenuOpen ? 'rotate-180' : ''}`} />
@@ -429,7 +430,7 @@ export default function Navbar() {
                 className="md:hidden w-8 h-8 rounded-full bg-[#C9A84C] text-black font-semibold text-sm flex items-center justify-center shrink-0 overflow-hidden"
               >
                 {user?.avatar
-                  ? <img src={user.avatar} alt="avatar" className="w-full h-full object-cover" />
+                  ? <img src={mediaUrl(user.avatar)!} alt="avatar" className="w-full h-full object-cover" />
                   : getInitials()}
               </button>
             ) : (

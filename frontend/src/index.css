@@ -13,6 +13,10 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+button, [role="button"], a, select, label[for] {
+  cursor: pointer;
+}
+
 body {
   font-family: 'Inter', sans-serif;
   background-color: var(--off-white);

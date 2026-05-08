@@ -13,6 +13,7 @@ import { getOrders } from '../api/orders';
 import { getAddresses, createAddress, updateAddress, deleteAddress, setDefaultAddress } from '../api/addresses';
 import { getWishlist } from '../api/wishlist';
 import { parseApiError, parseFieldErrors } from '../utils/apiError';
+import { mediaUrl } from '../utils/mediaUrl';
 import { addToCart } from '../api/cart';
 import { useCart } from '../context/CartContext';
 import StatusBadge from '../components/StatusBadge';
@@ -97,7 +98,7 @@ function ProfileSection() {
         <div className="relative shrink-0">
           <div className="w-16 h-16 rounded-full overflow-hidden bg-[#C9A84C]/15 flex items-center justify-center text-[#C9A84C] text-xl font-bold font-display">
             {user?.avatar ? (
-              <img src={user.avatar} alt="Avatar" className="w-full h-full object-cover" />
+              <img src={mediaUrl(user.avatar)!} alt="Avatar" className="w-full h-full object-cover" />
             ) : (
               user?.username?.charAt(0).toUpperCase() ?? '?'
             )}

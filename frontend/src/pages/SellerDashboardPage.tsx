@@ -12,6 +12,7 @@ import { getOrders, updateOrderStatus } from '../api/orders';
 import { getMySellerProfile, updateSellerProfile, getPayouts, requestPayout } from '../api/store';
 import { getCategories } from '../api/products';
 import { parseApiError, parseFieldErrors } from '../utils/apiError';
+import { mediaUrl } from '../utils/mediaUrl';
 import DashboardLayout from '../components/DashboardLayout';
 import StatCard from '../components/StatCard';
 import StatusBadge from '../components/StatusBadge';
@@ -545,7 +546,7 @@ function CustomerProfileModal({
         <div className="px-6 py-6 flex items-center gap-4 border-b border-gray-100">
           <div className="w-14 h-14 rounded-full bg-[#C9A84C]/15 overflow-hidden flex items-center justify-center text-[#C9A84C] text-xl font-bold font-display shrink-0">
             {order.customer_avatar
-              ? <img src={order.customer_avatar} alt={order.customer_username} className="w-full h-full object-cover" />
+              ? <img src={mediaUrl(order.customer_avatar)!} alt={order.customer_username} className="w-full h-full object-cover" />
               : order.customer_username?.charAt(0).toUpperCase()}
           </div>
           <div>
