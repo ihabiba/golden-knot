@@ -665,6 +665,7 @@ function SellerOrdersSection() {
           <p className="text-sm text-gray-400">No orders yet. Share your store link to get started!</p>
         </div>
       ) : (
+        <>
         <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
