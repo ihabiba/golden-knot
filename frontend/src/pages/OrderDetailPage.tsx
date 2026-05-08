@@ -3,9 +3,10 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
   ArrowLeft, Package, MapPin, Printer, ShoppingBag, CheckCircle2, Truck,
-  Clock, XCircle, RotateCcw, Loader2,
+  Clock, XCircle, RotateCcw, Loader2, ExternalLink,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useCart } from '../context/CartContext';
 import { getOrder } from '../api/orders';
 import { addToCart } from '../api/cart';
 import { parseApiError } from '../utils/apiError';
@@ -40,6 +41,7 @@ export default function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
+  const { setItemCount, itemCount } = useCart();
 
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
@@ -58,14 +60,26 @@ export default function OrderDetailPage() {
   const handleReorder = async () => {
     if (!order) return;
     setReordering(true);
-    try {
-      await Promise.all(order.items.map((item) => addToCart(item.product, item.quantity)));
-      toast.success('Items added to cart!');
+    let added = 0;
+    let failed = 0;
+    for (const item of order.items) {
+      try {
+        await addToCart(item.product, item.quantity);
+        added += item.quantity;
+      } catch {
+        failed++;
+      }
+    }
+    setReordering(false);
+    if (added > 0) setItemCount(itemCount + added);
+    if (failed > 0 && added === 0) {
+      toast.error('Items are no longer available.');
+    } else if (failed > 0) {
+      toast.success(`${order.items.length - failed} item(s) added. ${failed} unavailable.`);
       navigate('/cart');
-    } catch {
-      toast.error('Some items could not be added to cart.');
-    } finally {
-      setReordering(false);
+    } else {
+      toast.success('All items added to cart!');
+      navigate('/cart');
     }
   };
 
@@ -173,6 +187,42 @@ export default function OrderDetailPage() {
           </div>
         )}
 
+        {/* Tracking info — shown when seller provides it */}
+        {order.tracking_number && (
+          <div className="bg-linear-to-r from-[#C9A84C]/10 to-[#C9A84C]/5 border border-[#C9A84C]/20 rounded-2xl p-5 mb-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Truck size={16} className="text-[#C9A84C]" />
+              <h3 className="text-sm font-semibold text-[#1C1C1C]">Tracking Information</h3>
+            </div>
+            <div className="grid sm:grid-cols-2 gap-4 text-sm">
+              {order.shipping_carrier && (
+                <div>
+                  <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Carrier</p>
+                  <p className="font-semibold text-[#1C1C1C]">{order.shipping_carrier}</p>
+                </div>
+              )}
+              <div>
+                <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Tracking Number</p>
+                <div className="flex items-center gap-2">
+                  <code className="font-mono text-sm font-semibold text-[#1C1C1C] bg-white/60 px-2 py-1 rounded-lg border border-[#C9A84C]/20">
+                    {order.tracking_number}
+                  </code>
+                  <button
+                    onClick={() => { navigator.clipboard.writeText(order.tracking_number); toast.success('Copied!'); }}
+                    className="text-xs text-[#C9A84C] hover:text-[#A8872F] transition-colors"
+                  >
+                    Copy
+                  </button>
+                </div>
+              </div>
+            </div>
+            <p className="text-[11px] text-gray-400 mt-3 flex items-center gap-1">
+              <ExternalLink size={11} />
+              Search your carrier's website with the tracking number above.
+            </p>
+          </div>
+        )}
+
         <div className="grid sm:grid-cols-2 gap-4 mb-4">
           {/* Shipping address */}
           <div className="bg-white rounded-2xl border border-gray-100 p-5">
@@ -230,12 +280,16 @@ export default function OrderDetailPage() {
                   key={item.id}
                   className="flex items-center gap-4 pb-4 border-b border-gray-50 last:border-0 last:pb-0"
                 >
-                  <div
-                    className="w-14 h-14 rounded-xl shrink-0"
-                    style={{
-                      background: `linear-gradient(135deg, ${palette[0]} 0%, ${palette[1]} 55%, ${palette[2]} 100%)`,
-                    }}
-                  />
+                  <div className="w-14 h-14 rounded-xl shrink-0 overflow-hidden">
+                    {item.product_image ? (
+                      <img src={item.product_image} alt={item.product_name} className="w-full h-full object-cover" />
+                    ) : (
+                      <div
+                        className="w-full h-full"
+                        style={{ background: `linear-gradient(135deg, ${palette[0]} 0%, ${palette[1]} 55%, ${palette[2]} 100%)` }}
+                      />
+                    )}
+                  </div>
                   <div className="flex-1 min-w-0">
                     <Link
                       to={`/products/${item.product_slug}`}

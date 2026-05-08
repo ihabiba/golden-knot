@@ -1,5 +1,5 @@
 import api from './client';
-import type { Product, Category, PaginatedResponse } from '../types';
+import type { Product, Category, ProductImage, PaginatedResponse } from '../types';
 
 export const getProducts = (params?: Record<string, string | number | boolean>) =>
   api.get<PaginatedResponse<Product>>('/products/', { params });
@@ -26,3 +26,15 @@ export const approveProduct = (slug: string) =>
 
 export const rejectProduct = (slug: string) =>
   api.patch<{ detail: string; slug: string; is_approved: boolean }>(`/products/${slug}/reject/`);
+
+export const uploadProductImage = (slug: string, file: File, isPrimary: boolean) => {
+  const fd = new FormData();
+  fd.append('image', file);
+  fd.append('is_primary', isPrimary ? 'true' : 'false');
+  return api.post<ProductImage>(`/products/${slug}/upload-image/`, fd, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+};
+
+export const deleteProductImage = (slug: string, imageId: number) =>
+  api.delete(`/products/${slug}/images/${imageId}/`);

@@ -1,12 +1,13 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
   LayoutDashboard, Package, ShoppingBag, DollarSign, User as UserIcon,
   Plus, Pencil, Trash2, ChevronDown, Loader2, Star, TrendingUp, X,
+  ImagePlus, Truck,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { getProducts, createProduct, updateProduct, deleteProduct } from '../api/products';
+import { getProducts, createProduct, updateProduct, deleteProduct, uploadProductImage, deleteProductImage } from '../api/products';
 import { getOrders, updateOrderStatus } from '../api/orders';
 import { getMySellerProfile, updateSellerProfile, getPayouts, requestPayout } from '../api/store';
 import { getCategories } from '../api/products';
@@ -123,15 +124,7 @@ function OverviewSection({
 
 // ─── Product Form Modal ────────────────────────────────────────────────────────
 
-interface ProductFormData {
-  name: string;
-  description: string;
-  category: string;
-  price: string;
-  stock: string;
-  location: string;
-  is_active: boolean;
-}
+interface PendingImage { file: File; preview: string; isPrimary: boolean }
 
 function ProductModal({
   mode,
@@ -146,7 +139,7 @@ function ProductModal({
   onClose: () => void;
   onSuccess: () => void;
 }) {
-  const [form, setForm] = useState<ProductFormData>({
+  const [form, setForm] = useState({
     name: initial?.name ?? '',
     description: initial?.description ?? '',
     category: initial?.category?.toString() ?? '',
@@ -157,6 +150,54 @@ function ProductModal({
   });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Image state
+  const [existingImages, setExistingImages] = useState(initial?.images ?? []);
+  const [pendingImages, setPendingImages] = useState<PendingImage[]>([]);
+  const [deletedIds, setDeletedIds] = useState<number[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    const newPending: PendingImage[] = files.map((file, i) => ({
+      file,
+      preview: URL.createObjectURL(file),
+      isPrimary: existingImages.length === 0 && pendingImages.length === 0 && i === 0,
+    }));
+    setPendingImages((prev) => [...prev, ...newPending]);
+    e.target.value = '';
+  };
+
+  const removeExisting = (id: number) => {
+    setDeletedIds((prev) => [...prev, id]);
+    setExistingImages((prev) => {
+      const remaining = prev.filter((img) => img.id !== id);
+      if (remaining.length > 0 && !remaining.some((img) => img.is_primary)) {
+        remaining[0] = { ...remaining[0], is_primary: true };
+      }
+      return remaining;
+    });
+  };
+
+  const removePending = (idx: number) => {
+    setPendingImages((prev) => {
+      const next = prev.filter((_, i) => i !== idx);
+      if (next.length > 0 && !next.some((p) => p.isPrimary)) {
+        next[0] = { ...next[0], isPrimary: true };
+      }
+      return next;
+    });
+  };
+
+  const setPrimaryExisting = (id: number) => {
+    setExistingImages((prev) => prev.map((img) => ({ ...img, is_primary: img.id === id })));
+    setPendingImages((prev) => prev.map((p) => ({ ...p, isPrimary: false })));
+  };
+
+  const setPrimaryPending = (idx: number) => {
+    setExistingImages((prev) => prev.map((img) => ({ ...img, is_primary: false })));
+    setPendingImages((prev) => prev.map((p, i) => ({ ...p, isPrimary: i === idx })));
+  };
 
   const handleSubmit = async () => {
     setErrors({});
@@ -173,31 +214,43 @@ function ProductModal({
         location: form.location,
         is_active: form.is_active,
       };
+
+      let slug: string;
       if (mode === 'add') {
-        await createProduct(payload);
-        toast.success('Product created!');
-      } else if (initial) {
-        await updateProduct(initial.slug, payload);
-        toast.success('Product updated!');
+        const res = await createProduct(payload);
+        slug = res.data.slug;
+      } else {
+        slug = initial!.slug;
+        await updateProduct(slug, payload);
       }
+
+      // Delete removed images
+      await Promise.all(deletedIds.map((id) => deleteProductImage(slug, id)));
+
+      // Upload new images
+      for (const img of pendingImages) {
+        await uploadProductImage(slug, img.file, img.isPrimary);
+      }
+
+      toast.success(mode === 'add' ? 'Product created!' : 'Product updated!');
       onSuccess();
       onClose();
     } catch (err) {
       const fieldErrs = parseFieldErrors(err);
-      if (Object.keys(fieldErrs).length) {
-        setErrors(fieldErrs);
-      } else {
-        toast.error(parseApiError(err));
-      }
+      if (Object.keys(fieldErrs).length) setErrors(fieldErrs);
+      else toast.error(parseApiError(err));
     } finally {
       setLoading(false);
     }
   };
 
+  const inp = (err?: boolean) =>
+    `w-full border rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-[#C9A84C] transition-colors ${err ? 'border-red-400' : 'border-gray-200'}`;
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6">
+      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[92vh] overflow-y-auto p-6">
         <div className="flex items-center justify-between mb-6">
           <h3 className="font-display text-lg font-bold text-[#1C1C1C]">
             {mode === 'add' ? 'Add New Product' : 'Edit Product'}
@@ -206,101 +259,102 @@ function ProductModal({
         </div>
 
         <div className="space-y-4">
+          {/* Name */}
           <div>
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Product Name *</label>
-            <input
-              value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
-              className={`w-full border rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-[#C9A84C] transition-colors ${errors.name ? 'border-red-400' : 'border-gray-200'}`}
-              placeholder="Afghan Hand-Knotted Rug"
-            />
+            <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={inp(!!errors.name)} placeholder="Afghan Hand-Knotted Rug" />
             {errors.name && <p className="text-xs text-red-500 mt-1">{errors.name}</p>}
           </div>
 
+          {/* Description */}
           <div>
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Description</label>
-            <textarea
-              value={form.description}
-              onChange={(e) => setForm({ ...form, description: e.target.value })}
-              rows={3}
-              className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-[#C9A84C] transition-colors resize-none"
-              placeholder="Describe the piece, materials, dimensions…"
-            />
+            <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3} className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-[#C9A84C] transition-colors resize-none" placeholder="Describe the piece, materials, dimensions…" />
           </div>
 
+          {/* Price + Stock */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Price (USD) *</label>
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                value={form.price}
-                onChange={(e) => setForm({ ...form, price: e.target.value })}
-                className={`w-full border rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-[#C9A84C] transition-colors ${errors.price ? 'border-red-400' : 'border-gray-200'}`}
-                placeholder="149.99"
-              />
+              <input type="number" min="0" step="0.01" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} className={inp(!!errors.price)} placeholder="149.99" />
               {errors.price && <p className="text-xs text-red-500 mt-1">{errors.price}</p>}
             </div>
             <div>
               <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Stock</label>
-              <input
-                type="number"
-                min="0"
-                value={form.stock}
-                onChange={(e) => setForm({ ...form, stock: e.target.value })}
-                className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-[#C9A84C] transition-colors"
-                placeholder="1"
-              />
+              <input type="number" min="0" value={form.stock} onChange={(e) => setForm({ ...form, stock: e.target.value })} className={inp()} placeholder="1" />
             </div>
           </div>
 
+          {/* Category */}
           <div>
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Category</label>
-            <select
-              value={form.category}
-              onChange={(e) => setForm({ ...form, category: e.target.value })}
-              className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-[#C9A84C] transition-colors bg-white"
-            >
+            <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-[#C9A84C] transition-colors bg-white">
               <option value="">Select a category</option>
-              {categories.map((c) => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
+              {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           </div>
 
+          {/* Location */}
           <div>
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Location (Origin)</label>
-            <input
-              value={form.location}
-              onChange={(e) => setForm({ ...form, location: e.target.value })}
-              className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-[#C9A84C] transition-colors"
-              placeholder="Kabul, Afghanistan"
-            />
+            <input value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} className={inp()} placeholder="Kabul, Afghanistan" />
           </div>
 
+          {/* Active toggle */}
           <label className="flex items-center gap-3 cursor-pointer">
-            <div
-              onClick={() => setForm({ ...form, is_active: !form.is_active })}
-              className={`w-11 h-6 rounded-full transition-colors relative ${form.is_active ? 'bg-[#C9A84C]' : 'bg-gray-200'}`}
-            >
+            <div onClick={() => setForm({ ...form, is_active: !form.is_active })} className={`w-11 h-6 rounded-full transition-colors relative ${form.is_active ? 'bg-[#C9A84C]' : 'bg-gray-200'}`}>
               <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all ${form.is_active ? 'left-6' : 'left-1'}`} />
             </div>
             <span className="text-sm text-gray-700">Listed (visible to buyers)</span>
           </label>
+
+          {/* ── Image Upload ── */}
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Product Images</label>
+            <p className="text-[11px] text-gray-400 mb-3">Click the star to set the primary image shown in listings.</p>
+
+            <div className="flex flex-wrap gap-3 mb-3">
+              {/* Existing images */}
+              {existingImages.map((img) => (
+                <div key={img.id} className="relative group w-20 h-20 rounded-xl overflow-hidden border-2 border-gray-200">
+                  <img src={img.image} alt="" className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5">
+                    <button type="button" onClick={() => setPrimaryExisting(img.id)} className={`p-1 rounded-full transition-colors ${img.is_primary ? 'bg-[#C9A84C] text-black' : 'bg-white/80 text-gray-700 hover:bg-[#C9A84C] hover:text-black'}`} title="Set as primary">★</button>
+                    <button type="button" onClick={() => removeExisting(img.id)} className="p-1 rounded-full bg-red-500 text-white hover:bg-red-600 transition-colors" title="Remove"><X size={12} /></button>
+                  </div>
+                  {img.is_primary && <span className="absolute top-1 left-1 bg-[#C9A84C] text-black text-[9px] font-bold px-1.5 py-0.5 rounded-full leading-none">Primary</span>}
+                </div>
+              ))}
+
+              {/* Pending new images */}
+              {pendingImages.map((img, i) => (
+                <div key={i} className="relative group w-20 h-20 rounded-xl overflow-hidden border-2 border-dashed border-[#C9A84C]/40">
+                  <img src={img.preview} alt="" className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5">
+                    <button type="button" onClick={() => setPrimaryPending(i)} className={`p-1 rounded-full transition-colors ${img.isPrimary ? 'bg-[#C9A84C] text-black' : 'bg-white/80 text-gray-700 hover:bg-[#C9A84C] hover:text-black'}`} title="Set as primary">★</button>
+                    <button type="button" onClick={() => removePending(i)} className="p-1 rounded-full bg-red-500 text-white hover:bg-red-600 transition-colors" title="Remove"><X size={12} /></button>
+                  </div>
+                  {img.isPrimary && <span className="absolute top-1 left-1 bg-[#C9A84C] text-black text-[9px] font-bold px-1.5 py-0.5 rounded-full leading-none">Primary</span>}
+                  <span className="absolute bottom-1 right-1 bg-blue-500 text-white text-[9px] px-1 py-0.5 rounded-full leading-none">New</span>
+                </div>
+              ))}
+
+              {/* Add image button */}
+              <button type="button" onClick={() => fileInputRef.current?.click()} className="w-20 h-20 rounded-xl border-2 border-dashed border-gray-200 hover:border-[#C9A84C] hover:bg-[#C9A84C]/5 flex flex-col items-center justify-center gap-1 text-gray-400 hover:text-[#C9A84C] transition-colors">
+                <ImagePlus size={18} />
+                <span className="text-[10px] font-medium">Add</span>
+              </button>
+            </div>
+
+            <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleFileSelect} />
+          </div>
         </div>
 
         <div className="flex gap-3 mt-6">
-          <button onClick={onClose} className="flex-1 border border-gray-200 text-gray-600 font-medium py-2.5 rounded-xl text-sm hover:border-gray-400 transition-colors">
-            Cancel
-          </button>
-          <button
-            onClick={handleSubmit}
-            disabled={loading}
-            className="flex-1 flex items-center justify-center gap-2 bg-[#C9A84C] hover:bg-[#D4B96A] text-black font-semibold py-2.5 rounded-xl text-sm transition-colors disabled:opacity-60"
-          >
+          <button onClick={onClose} className="flex-1 border border-gray-200 text-gray-600 font-medium py-2.5 rounded-xl text-sm hover:border-gray-400 transition-colors">Cancel</button>
+          <button onClick={handleSubmit} disabled={loading} className="flex-1 flex items-center justify-center gap-2 bg-[#C9A84C] hover:bg-[#D4B96A] text-black font-semibold py-2.5 rounded-xl text-sm transition-colors disabled:opacity-60">
             {loading && <Loader2 size={14} className="animate-spin" />}
-            {mode === 'add' ? 'Create Product' : 'Save Changes'}
+            {loading ? 'Saving…' : mode === 'add' ? 'Create Product' : 'Save Changes'}
           </button>
         </div>
       </div>
@@ -469,6 +523,12 @@ function SellerOrdersSection() {
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<number | null>(null);
 
+  // Tracking modal state
+  const [shipTarget, setShipTarget] = useState<number | null>(null);
+  const [trackingNumber, setTrackingNumber] = useState('');
+  const [carrier, setCarrier] = useState('');
+  const [submittingShip, setSubmittingShip] = useState(false);
+
   useEffect(() => {
     getOrders()
       .then(({ data }) => setOrders(data.results))
@@ -476,17 +536,39 @@ function SellerOrdersSection() {
       .finally(() => setLoading(false));
   }, []);
 
-  const handleStatusUpdate = async (orderId: number, status: string) => {
+  const handleStatusChange = (orderId: number, newStatus: string) => {
+    if (newStatus === 'shipped') {
+      setShipTarget(orderId);
+      setTrackingNumber('');
+      setCarrier('');
+    } else {
+      doStatusUpdate(orderId, { status: newStatus });
+    }
+  };
+
+  const doStatusUpdate = useCallback(async (orderId: number, data: { status: string; tracking_number?: string; shipping_carrier?: string }) => {
     setUpdatingId(orderId);
     try {
-      await updateOrderStatus(orderId, status);
-      setOrders((prev) => prev.map((o) => o.id === orderId ? { ...o, status: status as Order['status'] } : o));
-      toast.success('Order status updated.');
+      const res = await updateOrderStatus(orderId, data);
+      setOrders((prev) => prev.map((o) => o.id === orderId ? res.data : o));
+      toast.success('Order updated.');
     } catch (err) {
       toast.error(parseApiError(err));
     } finally {
       setUpdatingId(null);
     }
+  }, []);
+
+  const handleConfirmShip = async () => {
+    if (!shipTarget) return;
+    setSubmittingShip(true);
+    await doStatusUpdate(shipTarget, {
+      status: 'shipped',
+      tracking_number: trackingNumber.trim(),
+      shipping_carrier: carrier.trim(),
+    });
+    setSubmittingShip(false);
+    setShipTarget(null);
   };
 
   return (
@@ -523,6 +605,11 @@ function SellerOrdersSection() {
                       <p className="text-xs text-gray-400">
                         {new Date(order.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
                       </p>
+                      {order.tracking_number && (
+                        <p className="text-[11px] text-[#C9A84C] mt-0.5 flex items-center gap-1">
+                          <Truck size={10} /> {order.shipping_carrier} · {order.tracking_number}
+                        </p>
+                      )}
                     </td>
                     <td className="px-4 py-3.5 hidden sm:table-cell text-gray-600">
                       {order.items.length} item{order.items.length !== 1 ? 's' : ''}
@@ -538,7 +625,7 @@ function SellerOrdersSection() {
                         <select
                           value={order.status}
                           disabled={updatingId === order.id}
-                          onChange={(e) => handleStatusUpdate(order.id, e.target.value)}
+                          onChange={(e) => handleStatusChange(order.id, e.target.value)}
                           className="appearance-none bg-gray-50 border border-gray-200 rounded-lg pl-3 pr-7 py-1.5 text-xs text-gray-700 focus:outline-none focus:border-[#C9A84C] cursor-pointer disabled:opacity-50"
                         >
                           {ORDER_STATUSES.map((s) => (
@@ -552,6 +639,57 @@ function SellerOrdersSection() {
                 ))}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* Tracking info modal — shown when seller marks an order as shipped */}
+      {shipTarget !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+            <div className="flex items-center gap-3 mb-5">
+              <div className="w-10 h-10 rounded-full bg-[#C9A84C]/10 flex items-center justify-center text-[#C9A84C]">
+                <Truck size={20} />
+              </div>
+              <div>
+                <h3 className="font-display font-bold text-[#1C1C1C]">Mark as Shipped</h3>
+                <p className="text-xs text-gray-500">Order #{shipTarget}</p>
+              </div>
+            </div>
+            <div className="space-y-3 mb-6">
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Shipping Carrier</label>
+                <input
+                  value={carrier}
+                  onChange={(e) => setCarrier(e.target.value)}
+                  placeholder="e.g. DHL, FedEx, Afghan Post"
+                  className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-[#C9A84C] transition-colors"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Tracking Number</label>
+                <input
+                  value={trackingNumber}
+                  onChange={(e) => setTrackingNumber(e.target.value)}
+                  placeholder="e.g. 1Z999AA10123456784"
+                  className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-[#C9A84C] transition-colors"
+                />
+              </div>
+              <p className="text-[11px] text-gray-400">Both fields are optional but recommended so buyers can track their order.</p>
+            </div>
+            <div className="flex gap-3">
+              <button onClick={() => setShipTarget(null)} className="flex-1 border border-gray-200 text-gray-600 font-medium py-2.5 rounded-xl text-sm hover:border-gray-400 transition-colors">
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmShip}
+                disabled={submittingShip}
+                className="flex-1 flex items-center justify-center gap-2 bg-[#C9A84C] hover:bg-[#D4B96A] text-black font-semibold py-2.5 rounded-xl text-sm transition-colors disabled:opacity-60"
+              >
+                {submittingShip && <Loader2 size={13} className="animate-spin" />}
+                Confirm Shipped
+              </button>
+            </div>
           </div>
         </div>
       )}

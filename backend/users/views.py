@@ -23,7 +23,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=["get"])
     def me(self, request):
-        return Response(UserSerializer(request.user).data)
+        return Response(UserSerializer(request.user, context={"request": request}).data)
 
     @action(detail=True, methods=["patch"], url_path="change-password")
     def change_password(self, request, pk=None):
@@ -63,7 +63,7 @@ class UserViewSet(viewsets.ModelViewSet):
         user = self.get_object()
         user.is_active = False
         user.save()
-        return Response(UserSerializer(user).data)
+        return Response(UserSerializer(user, context={"request": request}).data)
 
     @action(detail=True, methods=["patch"])
     def activate(self, request, pk=None):
@@ -72,4 +72,4 @@ class UserViewSet(viewsets.ModelViewSet):
         user = self.get_object()
         user.is_active = True
         user.save()
-        return Response(UserSerializer(user).data)
+        return Response(UserSerializer(user, context={"request": request}).data)

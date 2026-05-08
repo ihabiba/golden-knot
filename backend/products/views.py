@@ -2,8 +2,8 @@ from rest_framework import viewsets, filters, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.db.models import Avg, Count, Q
-from .models import Category, Product
-from .serializers import CategorySerializer, ProductSerializer
+from .models import Category, Product, ProductImage
+from .serializers import CategorySerializer, ProductSerializer, ProductImageSerializer
 
 
 class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
@@ -74,6 +74,45 @@ class ProductViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(seller=self.request.user)
+
+    @action(detail=True, methods=["post"], url_path="upload-image")
+    def upload_image(self, request, slug=None):
+        product = self.get_object()
+        if request.user != product.seller and request.user.role != "admin":
+            return Response({"detail": "Forbidden."}, status=status.HTTP_403_FORBIDDEN)
+
+        image_file = request.FILES.get("image")
+        if not image_file:
+            return Response({"detail": "No image provided."}, status=status.HTTP_400_BAD_REQUEST)
+
+        is_primary = request.data.get("is_primary", "false").lower() == "true"
+        if is_primary:
+            product.images.filter(is_primary=True).update(is_primary=False)
+
+        img = ProductImage.objects.create(
+            product=product,
+            image=image_file,
+            is_primary=is_primary or not product.images.exists(),
+            order=product.images.count(),
+        )
+        return Response(ProductImageSerializer(img, context={"request": request}).data, status=status.HTTP_201_CREATED)
+
+    @action(detail=True, methods=["delete"], url_path=r"images/(?P<image_id>[0-9]+)")
+    def delete_image(self, request, slug=None, image_id=None):
+        product = self.get_object()
+        if request.user != product.seller and request.user.role != "admin":
+            return Response({"detail": "Forbidden."}, status=status.HTTP_403_FORBIDDEN)
+        try:
+            img = product.images.get(pk=image_id)
+        except ProductImage.DoesNotExist:
+            return Response({"detail": "Image not found."}, status=status.HTTP_404_NOT_FOUND)
+        img.delete()
+        # If primary was deleted, promote first remaining image
+        remaining = product.images.order_by("order").first()
+        if remaining and not product.images.filter(is_primary=True).exists():
+            remaining.is_primary = True
+            remaining.save()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(detail=True, methods=["patch"])
     def approve(self, request, slug=None):

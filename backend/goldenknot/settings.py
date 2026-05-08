@@ -34,6 +34,18 @@ INSTALLED_APPS = [
     "addresses",
 ]
 
+# ── Cloudinary (optional) ────────────────────────────────────────────────────
+USE_CLOUDINARY = config("USE_CLOUDINARY", default=False, cast=bool)
+
+if USE_CLOUDINARY:
+    INSTALLED_APPS += ["cloudinary_storage", "cloudinary"]
+    CLOUDINARY_STORAGE = {
+        "CLOUD_NAME": config("CLOUDINARY_CLOUD_NAME", default=""),
+        "API_KEY":    config("CLOUDINARY_API_KEY",    default=""),
+        "API_SECRET": config("CLOUDINARY_API_SECRET", default=""),
+    }
+    DEFAULT_FILE_STORAGE = "cloudinary_storage.storage.MediaCloudinaryStorage"
+
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",

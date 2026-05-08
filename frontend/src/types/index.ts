@@ -83,6 +83,7 @@ export interface OrderItem {
   product: number;
   product_name: string;
   product_slug: string;
+  product_image: string | null;
   seller: number;
   seller_name: string;
   quantity: number;
@@ -100,6 +101,8 @@ export interface Order {
   discount_amount: string;
   payment_id: string;
   payment_status: string;
+  tracking_number: string;
+  shipping_carrier: string;
   items: OrderItem[];
   created_at: string;
   updated_at: string;

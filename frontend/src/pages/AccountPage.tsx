@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useWishlist } from '../context/WishlistContext';
-import { updateUser, changePassword } from '../api/users';
+import { updateUser, changePassword, deactivateUser } from '../api/users';
 import { getOrders } from '../api/orders';
 import { getAddresses, createAddress, updateAddress, deleteAddress, setDefaultAddress } from '../api/addresses';
 import { getWishlist } from '../api/wishlist';
@@ -40,13 +40,33 @@ function ProfileSection() {
     phone: user?.phone ?? '',
   });
   const [saving, setSaving] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const avatarInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (user) {
       setForm({ username: user.username, email: user.email, phone: user.phone ?? '' });
     }
   }, [user]);
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    setUploadingAvatar(true);
+    try {
+      const fd = new FormData();
+      fd.append('avatar', file);
+      await updateUser(user.id, fd);
+      await refreshUser();
+      toast.success('Profile photo updated!');
+    } catch {
+      toast.error('Failed to upload photo.');
+    } finally {
+      setUploadingAvatar(false);
+      e.target.value = '';
+    }
+  };
 
   const handleSave = async () => {
     if (!user) return;
@@ -74,15 +94,31 @@ function ProfileSection() {
 
       {/* Avatar */}
       <div className="flex items-center gap-4 mb-8 p-4 bg-white rounded-2xl border border-gray-100">
-        <div className="w-16 h-16 rounded-full bg-[#C9A84C]/15 flex items-center justify-center text-[#C9A84C] text-xl font-bold font-display shrink-0">
-          {user?.username?.charAt(0).toUpperCase() ?? '?'}
+        <div className="relative shrink-0">
+          <div className="w-16 h-16 rounded-full overflow-hidden bg-[#C9A84C]/15 flex items-center justify-center text-[#C9A84C] text-xl font-bold font-display">
+            {user?.avatar ? (
+              <img src={user.avatar} alt="Avatar" className="w-full h-full object-cover" />
+            ) : (
+              user?.username?.charAt(0).toUpperCase() ?? '?'
+            )}
+          </div>
+          {uploadingAvatar && (
+            <div className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center">
+              <Loader2 size={16} className="animate-spin text-white" />
+            </div>
+          )}
         </div>
         <div>
           <p className="font-semibold text-[#1C1C1C] text-sm">{user?.username}</p>
           <p className="text-xs text-gray-500 capitalize">{user?.role}</p>
-          <button className="mt-1.5 flex items-center gap-1 text-xs text-[#C9A84C] hover:text-[#D4B96A] transition-colors">
-            <Camera size={12} /> Change photo
+          <button
+            onClick={() => avatarInputRef.current?.click()}
+            disabled={uploadingAvatar}
+            className="mt-1.5 flex items-center gap-1 text-xs text-[#C9A84C] hover:text-[#D4B96A] transition-colors disabled:opacity-60"
+          >
+            <Camera size={12} /> {uploadingAvatar ? 'Uploading…' : 'Change photo'}
           </button>
+          <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
         </div>
       </div>
 
@@ -671,7 +707,7 @@ function AddressesSection() {
 // ─── Settings Section ────────────────────────────────────────────────────────
 
 function SettingsSection() {
-  const { user, logout } = useAuth();
+  const { user, logout, refreshUser } = useAuth();
   const navigate = useNavigate();
   const [pwForm, setPwForm] = useState({ old_password: '', password: '', confirm: '' });
   const [showOld, setShowOld] = useState(false);
@@ -798,10 +834,21 @@ function SettingsSection() {
       <ConfirmModal
         isOpen={deleteOpen}
         onClose={() => setDeleteOpen(false)}
-        onConfirm={() => { toast.error('Contact support to delete your account.'); setDeleteOpen(false); }}
+        onConfirm={async () => {
+          if (!user) return;
+          try {
+            await deactivateUser(user.id);
+            toast.success('Account deactivated. Goodbye!');
+            logout();
+            navigate('/');
+          } catch {
+            toast.error('Could not deactivate account. Contact support.');
+          }
+          setDeleteOpen(false);
+        }}
         title="Delete Account"
-        message="This is permanent. All your orders, reviews, and data will be removed. Are you sure?"
-        confirmLabel="Delete My Account"
+        message="Your account will be deactivated immediately. All sessions will end. Are you sure?"
+        confirmLabel="Deactivate My Account"
         variant="danger"
       />
     </div>

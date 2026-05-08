@@ -13,5 +13,7 @@ export const createOrderFromCart = (data: {
   discount_amount?: string;
 }) => api.post<Order>('/orders/from-cart/', data);
 
-export const updateOrderStatus = (id: number, status: string) =>
-  api.patch<Order>(`/orders/${id}/`, { status });
+export const updateOrderStatus = (
+  id: number,
+  data: { status: string; tracking_number?: string; shipping_carrier?: string },
+) => api.patch<Order>(`/orders/${id}/`, data);
