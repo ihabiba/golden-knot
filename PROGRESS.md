@@ -227,6 +227,30 @@ CartSerializer: `total` and `item_count` computed fields. CartItemSerializer: `p
 
 ---
 
+### App: `wishlist/`
+
+| Method | URL | Notes |
+|--------|-----|-------|
+| GET | `/api/wishlist/` | List own wishlist items (includes full product_detail) |
+| POST | `/api/wishlist/` | Add product `{ product: id }` — idempotent (returns existing if already wishlisted) |
+| DELETE | `/api/wishlist/<id>/` | Remove item |
+
+---
+
+### App: `addresses/`
+
+| Method | URL | Notes |
+|--------|-----|-------|
+| GET | `/api/addresses/` | List own addresses |
+| POST | `/api/addresses/` | Create address |
+| PATCH | `/api/addresses/<id>/` | Update address |
+| DELETE | `/api/addresses/<id>/` | Delete address |
+| PATCH | `/api/addresses/<id>/set-default/` | Set as default (unsets others automatically) |
+
+Fields: `full_name`, `address_line1`, `address_line2`, `city`, `country`, `postal_code`, `phone`, `is_default`.
+
+---
+
 ### App: `core/`
 
 `seed_db` management command — idempotent seeder.
@@ -281,15 +305,17 @@ All TypeScript interfaces in one file:
 | File | Functions |
 |------|-----------|
 | `client.ts` | Axios instance. Request interceptor reads token from localStorage **or sessionStorage**. Response interceptor: 401 → silent refresh, stores back to original storage. |
-| `auth.ts` | `login()`, `register()`, `refreshToken()`, **`fetchCurrentUser()`** |
-| `users.ts` | **NEW** `getUsers()`, `updateUser()`, `changePassword()`, `deactivateUser()`, `activateUser()` |
-| `products.ts` | `getProducts(params?)`, `getProduct()`, `getCategories()`, `createProduct()` (JSON or FormData), `updateProduct(slug, data)`, `deleteProduct(slug)`, **`approveProduct(slug)`**, **`rejectProduct(slug)`** |
+| `auth.ts` | `login()`, `register()`, `refreshToken()`, `fetchCurrentUser()` |
+| `users.ts` | `getUsers()`, `updateUser()`, `changePassword()`, `deactivateUser()`, `activateUser()` |
+| `products.ts` | `getProducts(params?)`, `getProduct()`, `getCategories()`, `createProduct()`, `updateProduct(slug)`, `deleteProduct(slug)`, `approveProduct(slug)`, `rejectProduct(slug)` |
 | `orders.ts` | `getOrders(params?)`, `getOrder(id)`, `createOrderFromCart()`, `updateOrderStatus()` |
 | `cart.ts` | `getCart()`, `addToCart()`, `updateCartItem()`, `removeCartItem()` |
 | `reviews.ts` | `getReviews()`, `createReview()` |
-| `store.ts` | **NEW** `getMySellerProfile()`, `getAllSellers()`, `createSellerProfile()`, `updateSellerProfile()`, `approveSellerProfile()`, `rejectSellerProfile()`, `getPayouts()`, `requestPayout()` |
-| `promotions.ts` | `validatePromoCode()`, **`getPromoCodes()`**, **`createPromoCode()`**, **`updatePromoCode()`**, **`deletePromoCode()`** |
+| `store.ts` | `getMySellerProfile()`, `getAllSellers()`, `createSellerProfile()`, `updateSellerProfile()`, `approveSellerProfile()`, `rejectSellerProfile()`, `getPayouts()`, `requestPayout()` |
+| `promotions.ts` | `validatePromoCode()`, `getPromoCodes()`, `createPromoCode()`, `updatePromoCode()`, `deletePromoCode()` |
 | `notifications.ts` | `getNotifications()`, `markAllRead()`, `deleteNotification()` |
+| `wishlist.ts` | `getWishlist()`, `addToWishlist(productId)`, `removeFromWishlist(id)` |
+| `addresses.ts` | `getAddresses()`, `createAddress()`, `updateAddress()`, `deleteAddress()`, `setDefaultAddress()` |
 
 ---
 
@@ -297,8 +323,9 @@ All TypeScript interfaces in one file:
 
 | File | Exports |
 |------|---------|
-| `AuthContext.tsx` | `user: User \| null` — **now populated**: fetched from `/api/users/me/` on login AND on app mount if token exists. `login()`, `logout()`, `refreshUser()`, `isAuthenticated`. `useAuth()` hook. |
+| `AuthContext.tsx` | `user: User \| null` — populated from `/api/users/me/` on login AND on app mount. `login()`, `logout()`, `refreshUser()`, `isAuthenticated`. `useAuth()` hook. |
 | `CartContext.tsx` | `itemCount`, `setItemCount`, `incrementCount`, `decrementCount`. `useCart()` hook. |
+| `WishlistContext.tsx` | `wishlistIds: Set<number>`, `itemIdMap: Map<number, number>`, `toggle(productId)`, `refresh()`, `loading`. Fetched on mount when authenticated. `useWishlist()` hook. |
 
 ---
 
@@ -314,9 +341,9 @@ All TypeScript interfaces in one file:
 
 | File | What it does |
 |------|-------------|
-| `Navbar.tsx` | Fixed black navbar, auth-aware, role-aware dropdown, search overlay, mobile hamburger |
-| `Footer.tsx` | Black footer, brand column, inline SVG social icons, dev credit |
-| `ProductCard.tsx` | Textile gradient placeholder, wishlist toggle, add to cart, real Product type |
+| `Navbar.tsx` | Fixed black navbar, auth-aware, role-aware dropdown, search overlay, mobile hamburger. **Notification bell** with unread count badge, dropdown listing recent notifications, mark-all-read button. |
+| `Footer.tsx` | Black footer, brand column, inline SVG social icons, dev credit. **Google Translate** widget (dark-styled, auto-initialized). |
+| `ProductCard.tsx` | Textile gradient placeholder, **wishlist toggle wired to API** (WishlistContext), add to cart, real Product type |
 | `CategoryCard.tsx` | Dark card, gold icon, links to /products?category= |
 | `DashboardLayout.tsx` | **NEW** Dark sidebar + main content. Mobile: hamburger drawer. Props: `title`, `subtitle`, `navItems[]`, `activeSection`, `onSectionChange` |
 | `StatCard.tsx` | **NEW** Icon + value + label + optional trend badge |
@@ -339,9 +366,14 @@ All TypeScript interfaces in one file:
 | `OrderConfirmationPage.tsx` | `/orders/:orderId/confirmation` | ✅ Complete |
 | `OrdersPage.tsx` | `/orders` | ✅ **New** — tab-filtered list with item previews, count badges |
 | `OrderDetailPage.tsx` | `/orders/:id` | ✅ **New** — status timeline, items, address, totals, reorder + print |
-| `AccountPage.tsx` | `/account` | ✅ **New** — Profile edit, My Orders, Wishlist/Addresses (stubs), Settings (change pw + delete) |
+| `AccountPage.tsx` | `/account` | ✅ Complete — Profile edit, My Orders, **Wishlist** (product cards + add-to-cart + remove), **Addresses** (CRUD modal + set-default), Settings |
 | `SellerDashboardPage.tsx` | `/seller/dashboard` | ✅ **New** — Overview, Products (CRUD modal), Orders (status update), Earnings + payouts, Store profile |
-| `AdminDashboardPage.tsx` | `/admin` | ✅ **New** — Overview, Users (suspend/activate), Sellers (approve/reject), Products (approve/reject), Orders (status), Promo Codes (full CRUD) |
+| `AdminDashboardPage.tsx` | `/admin` | ✅ Complete — Overview, Users (suspend/activate), Sellers (approve/reject), Products (approve/reject), Orders (status), Promo Codes (full CRUD) |
+| `AboutPage.tsx` | `/about` | ✅ Complete — Hero, stats, mission, values, team, CTA |
+| `ContactPage.tsx` | `/contact` | ✅ Complete — Contact form with validation, contact info cards |
+| `FAQPage.tsx` | `/faq` | ✅ Complete — Accordion layout, 5 sections, 24 questions |
+| `PrivacyPage.tsx` | `/privacy` | ✅ Complete — 10-section privacy policy |
+| `TermsPage.tsx` | `/terms` | ✅ Complete — 11-section terms & conditions |
 
 ---
 
@@ -355,8 +387,8 @@ All TypeScript interfaces in one file:
 
 | File | Purpose |
 |------|---------|
-| `App.tsx` | All 13 routes including new `/orders/:id` |
-| `main.tsx` | Mounts app with `AuthProvider` + `CartProvider` + `<Toaster />` |
+| `App.tsx` | All 19 routes — core pages + about/contact/faq/privacy/terms |
+| `main.tsx` | Mounts app with `AuthProvider` + `CartProvider` + `WishlistProvider` + `<Toaster />` |
 | `src/index.css` | Tailwind v4 import + CSS vars + `.font-display` |
 | `index.html` | Google Fonts via `<link>` (Playfair Display + Inter) |
 | `vite.config.ts` | `@vitejs/plugin-react` + `@tailwindcss/vite` |
@@ -409,19 +441,32 @@ All TypeScript interfaces in one file:
 - [x] `tsc --noEmit` → 0 errors
 - [x] `manage.py check` → 0 issues
 
+### Done ✅ (this batch)
+- [x] Backend: `wishlist` app — WishlistItem model, GET/POST/DELETE endpoints, idempotent add
+- [x] Backend: `addresses` app — Address model, full CRUD + set-default action
+- [x] Backend: migrations applied for both new apps
+- [x] Frontend: `WishlistContext` — fetches on mount, optimistic toggle, Set<number> for O(1) lookup
+- [x] Frontend: `ProductCard` heart icon wired to wishlist API (redirect to login if unauthenticated)
+- [x] Frontend: `AccountPage` Wishlist section — product cards, add-to-cart, remove
+- [x] Frontend: `AccountPage` Addresses section — add/edit/delete modal, set default, empty state
+- [x] Frontend: `CheckoutPage` Step 1 — saved address selector cards + "Enter new address" toggle
+- [x] Frontend: Navbar notification bell — unread badge, dropdown, mark-all-read, polls every 60s
+- [x] Frontend: `AboutPage` — hero, stats strip, mission, values, team, CTA
+- [x] Frontend: `ContactPage` — form with validation + success state, contact info cards
+- [x] Frontend: `FAQPage` — accordion, 5 sections, 24 questions
+- [x] Frontend: `PrivacyPage` + `TermsPage` — elegantly styled, bullet-point sections
+- [x] Frontend: Google Translate widget in Footer (dark-styled, loads async)
+- [x] App.tsx: 19 routes total (was 13)
+- [x] `tsc --noEmit` → 0 errors
+
 ### To Build Next
-- [ ] Notification bell in Navbar (live count from API)
-- [ ] OrdersPage / AccountPage: paginate large order lists
-- [ ] Wishlist page
-- [ ] About, Contact, FAQ static pages
 - [ ] Backend: HesabPay payment gateway integration
-- [ ] Migrations: run `python manage.py makemigrations && migrate` against Supabase (if schema changed)
-- [ ] Lengthen `SECRET_KEY` in `.env` to 50+ chars before production
 - [ ] Seller dashboard: image upload for products
 - [ ] Admin dashboard: pagination for large tables
+- [ ] OrdersPage / AccountPage: paginate large order lists
+- [ ] Lengthen `SECRET_KEY` in `.env` to 50+ chars before production
 
 ### Later
-- [ ] Multi-language (English, Dari, Pashto) via Google Translate widget
 - [ ] Multi-currency display
 - [ ] SEO meta tags + sitemap
 - [ ] Performance tuning + image optimization
