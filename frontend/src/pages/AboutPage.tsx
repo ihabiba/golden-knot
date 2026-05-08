@@ -1,0 +1,199 @@
+import { Link } from 'react-router-dom';
+import { Heart, Globe, Shield, Sparkles } from 'lucide-react';
+
+const STATS = [
+  { value: '200+', label: 'Artisan Weavers' },
+  { value: '50+', label: 'Weaving Patterns' },
+  { value: '30+', label: 'Countries Served' },
+  { value: '100%', label: 'Handcrafted' },
+];
+
+const VALUES = [
+  {
+    icon: <Heart size={24} className="text-[#C9A84C]" />,
+    title: 'Empowerment',
+    body: 'We place Afghan women weavers at the centre of everything — giving them direct access to a global marketplace and fair compensation for their extraordinary craft.',
+  },
+  {
+    icon: <Globe size={24} className="text-[#C9A84C]" />,
+    title: 'Global Reach',
+    body: 'From Kabul to Copenhagen, every purchase connects a buyer with the hands and story behind a piece. We bridge cultures through textiles.',
+  },
+  {
+    icon: <Shield size={24} className="text-[#C9A84C]" />,
+    title: 'Authenticity',
+    body: 'Every seller on Golden Knot is verified. Every product is genuinely handcrafted. You are never buying mass-produced imitations.',
+  },
+  {
+    icon: <Sparkles size={24} className="text-[#C9A84C]" />,
+    title: 'Heritage Preservation',
+    body: 'Afghan carpet-weaving spans centuries. We exist to ensure these traditions are not lost — they are celebrated, sold, and sustained.',
+  },
+];
+
+const TEAM = [
+  { name: 'Habiba Hassan', role: 'Founder & Developer', initial: 'H' },
+];
+
+export default function AboutPage() {
+  return (
+    <div className="bg-[#FAFAF8] min-h-screen">
+
+      {/* Hero */}
+      <div className="bg-[#0A0A0A] relative overflow-hidden">
+        <div className="absolute inset-0 opacity-10 pointer-events-none">
+          <svg width="100%" height="100%">
+            <defs>
+              <pattern id="hero-weave" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
+                <rect x="0" y="0" width="20" height="20" fill="rgba(201,168,76,0.4)" />
+                <rect x="20" y="20" width="20" height="20" fill="rgba(201,168,76,0.4)" />
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#hero-weave)" />
+          </svg>
+        </div>
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-24 text-center relative">
+          <span className="inline-block text-[#C9A84C] text-xs font-semibold uppercase tracking-[0.3em] mb-4">Our Story</span>
+          <h1 className="font-display text-4xl sm:text-5xl font-bold text-white mb-6 leading-tight">
+            Where Ancient Craft Meets<br />
+            <span className="text-[#C9A84C]">Global Commerce</span>
+          </h1>
+          <p className="text-gray-400 text-lg max-w-2xl mx-auto leading-relaxed">
+            Golden Knot was founded on a single belief: the most beautiful textiles in the world
+            deserve the most beautiful marketplace in the world — and the women who create them
+            deserve fair recognition and income.
+          </p>
+        </div>
+      </div>
+
+      {/* Stats */}
+      <div className="bg-white border-b border-gray-100">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-8 text-center">
+            {STATS.map(({ value, label }) => (
+              <div key={label}>
+                <p className="font-display text-3xl font-bold text-[#C9A84C]">{value}</p>
+                <p className="text-sm text-gray-500 mt-1">{label}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Mission */}
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+        <div className="grid md:grid-cols-2 gap-16 items-center">
+          <div>
+            <span className="text-[#C9A84C] text-xs font-semibold uppercase tracking-widest">Our Mission</span>
+            <h2 className="font-display text-3xl font-bold text-[#1C1C1C] mt-3 mb-5">
+              Preserving a Living Heritage
+            </h2>
+            <p className="text-gray-600 leading-relaxed mb-4">
+              Afghan carpet weaving is one of the world's oldest and most technically demanding
+              art forms. A single rug can take months or years to complete, with thousands of
+              knots tied by hand into patterns passed down through generations.
+            </p>
+            <p className="text-gray-600 leading-relaxed mb-4">
+              Yet the women who create these masterpieces have historically had no direct access
+              to global buyers — middlemen took the lion's share, and artisans were left with
+              a fraction of their work's true value.
+            </p>
+            <p className="text-gray-600 leading-relaxed">
+              Golden Knot changes that. We are a direct marketplace: artisans set their own
+              prices, tell their own stories, and receive fair payment for extraordinary work.
+            </p>
+          </div>
+          <div className="relative">
+            <div className="aspect-square rounded-2xl overflow-hidden bg-gradient-to-br from-[#8B2525] via-[#C9A84C] to-[#1C3A5E] flex items-center justify-center">
+              <svg width="60%" height="60%" viewBox="0 0 200 200" className="opacity-30">
+                <defs>
+                  <pattern id="carpet" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
+                    <rect x="0" y="0" width="10" height="10" fill="rgba(255,255,255,0.4)" />
+                    <rect x="10" y="10" width="10" height="10" fill="rgba(255,255,255,0.4)" />
+                    <circle cx="5" cy="5" r="3" fill="rgba(255,255,255,0.2)" />
+                    <circle cx="15" cy="15" r="3" fill="rgba(255,255,255,0.2)" />
+                  </pattern>
+                </defs>
+                <rect width="200" height="200" fill="url(#carpet)" />
+              </svg>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span className="text-white/20 font-display text-6xl font-bold select-none">GK</span>
+              </div>
+            </div>
+            <div className="absolute -bottom-4 -right-4 w-24 h-24 bg-[#C9A84C]/10 rounded-2xl -z-10" />
+          </div>
+        </div>
+      </div>
+
+      {/* Values */}
+      <div className="bg-white border-t border-b border-gray-100">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+          <div className="text-center mb-12">
+            <span className="text-[#C9A84C] text-xs font-semibold uppercase tracking-widest">What We Stand For</span>
+            <h2 className="font-display text-3xl font-bold text-[#1C1C1C] mt-3">Our Values</h2>
+          </div>
+          <div className="grid sm:grid-cols-2 gap-8">
+            {VALUES.map(({ icon, title, body }) => (
+              <div key={title} className="flex gap-5">
+                <div className="w-12 h-12 rounded-xl bg-[#C9A84C]/10 flex items-center justify-center shrink-0">
+                  {icon}
+                </div>
+                <div>
+                  <h3 className="font-display font-bold text-[#1C1C1C] mb-2">{title}</h3>
+                  <p className="text-gray-600 text-sm leading-relaxed">{body}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Team */}
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+        <div className="text-center mb-12">
+          <span className="text-[#C9A84C] text-xs font-semibold uppercase tracking-widest">The People Behind It</span>
+          <h2 className="font-display text-3xl font-bold text-[#1C1C1C] mt-3">Our Team</h2>
+        </div>
+        <div className="flex justify-center gap-8 flex-wrap">
+          {TEAM.map(({ name, role, initial }) => (
+            <div key={name} className="text-center">
+              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[#C9A84C] to-[#8B2525] flex items-center justify-center text-white font-display text-2xl font-bold mx-auto mb-3">
+                {initial}
+              </div>
+              <p className="font-semibold text-[#1C1C1C] text-sm">{name}</p>
+              <p className="text-xs text-gray-500 mt-0.5">{role}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* CTA */}
+      <div className="bg-[#0A0A0A]">
+        <div className="max-w-2xl mx-auto px-4 py-20 text-center">
+          <h2 className="font-display text-3xl font-bold text-white mb-4">
+            Ready to Own a Piece of History?
+          </h2>
+          <p className="text-gray-400 mb-8">
+            Every rug, kilim, and cushion in our collection carries a story.
+            Browse our collection and find yours.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link
+              to="/products"
+              className="bg-[#C9A84C] hover:bg-[#D4B96A] text-black font-semibold px-8 py-3.5 rounded-xl text-sm transition-colors"
+            >
+              Shop the Collection
+            </Link>
+            <Link
+              to="/register"
+              className="border border-white/20 hover:border-[#C9A84C] text-white hover:text-[#C9A84C] font-medium px-8 py-3.5 rounded-xl text-sm transition-colors"
+            >
+              Sell With Us
+            </Link>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  );
+}

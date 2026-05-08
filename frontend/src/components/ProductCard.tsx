@@ -4,6 +4,7 @@ import { Star, ShoppingCart, Heart } from 'lucide-react';
 import type { Product } from '../types';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import { useWishlist } from '../context/WishlistContext';
 import { addToCart } from '../api/cart';
 
 // Deterministic palette — generated from product.id so same product always looks the same
@@ -25,9 +26,10 @@ interface ProductCardProps {
 export default function ProductCard({ product }: ProductCardProps) {
   const { isAuthenticated } = useAuth();
   const { setItemCount, itemCount } = useCart();
+  const { wishlistIds, toggle: toggleWishlist } = useWishlist();
   const navigate = useNavigate();
 
-  const [wishlisted, setWishlisted] = useState(false);
+  const wishlisted = wishlistIds.has(product.id);
   const [addedToCart, setAddedToCart] = useState(false);
   const [adding, setAdding] = useState(false);
 
@@ -62,7 +64,8 @@ export default function ProductCard({ product }: ProductCardProps) {
 
   const handleWishlist = (e: React.MouseEvent) => {
     e.preventDefault();
-    setWishlisted((w) => !w);
+    if (!isAuthenticated) { navigate('/login'); return; }
+    toggleWishlist(product.id);
   };
 
   return (

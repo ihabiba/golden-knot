@@ -2,11 +2,12 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
   ChevronRight, Check, Edit2, Loader2, AlertCircle,
-  MapPin, CreditCard, Package,
+  MapPin, CreditCard, Package, Plus,
 } from 'lucide-react';
-import type { Cart, ShippingAddress, PromoValidation } from '../types';
+import type { Cart, ShippingAddress, PromoValidation, Address } from '../types';
 import { getCart } from '../api/cart';
 import { createOrderFromCart } from '../api/orders';
+import { getAddresses } from '../api/addresses';
 import { parseApiError } from '../utils/apiError';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
@@ -212,6 +213,9 @@ export default function CheckoutPage() {
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof ShippingAddress, string>>>({});
   const [placeLoading, setPlaceLoading] = useState(false);
   const [placeError, setPlaceError]     = useState('');
+  const [savedAddresses, setSavedAddresses] = useState<Address[]>([]);
+  const [selectedSavedId, setSelectedSavedId] = useState<number | null>(null);
+  const [showNewForm, setShowNewForm] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -228,7 +232,41 @@ export default function CheckoutPage() {
       })
       .catch(() => navigate('/cart'))
       .finally(() => setCartLoading(false));
+
+    getAddresses().then(({ data }) => {
+      setSavedAddresses(data.results);
+      const def = data.results.find((a) => a.is_default) ?? data.results[0];
+      if (def) {
+        setSelectedSavedId(def.id);
+        setAddress({
+          full_name: def.full_name,
+          address_line1: def.address_line1,
+          address_line2: def.address_line2 ?? '',
+          city: def.city,
+          country: def.country,
+          postal_code: def.postal_code,
+          phone: def.phone,
+        });
+      } else {
+        setShowNewForm(true);
+      }
+    }).catch(() => setShowNewForm(true));
   }, [isAuthenticated, navigate]);
+
+  const selectSavedAddress = (addr: Address) => {
+    setSelectedSavedId(addr.id);
+    setAddress({
+      full_name: addr.full_name,
+      address_line1: addr.address_line1,
+      address_line2: addr.address_line2 ?? '',
+      city: addr.city,
+      country: addr.country,
+      postal_code: addr.postal_code,
+      phone: addr.phone,
+    });
+    setShowNewForm(false);
+    setFieldErrors({});
+  };
 
   const setField = (key: keyof ShippingAddress) => (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -320,6 +358,58 @@ export default function CheckoutPage() {
                   <h2 className="font-display text-xl font-bold text-[#1C1C1C]">Shipping Address</h2>
                 </div>
 
+                {/* Saved addresses */}
+                {savedAddresses.length > 0 && (
+                  <div className="mb-6">
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Your saved addresses</p>
+                    <div className="space-y-2">
+                      {savedAddresses.map((addr) => (
+                        <button
+                          key={addr.id}
+                          type="button"
+                          onClick={() => selectSavedAddress(addr)}
+                          className={`w-full text-left p-4 rounded-xl border-2 transition-all ${
+                            selectedSavedId === addr.id && !showNewForm
+                              ? 'border-[#C9A84C] bg-[#C9A84C]/5'
+                              : 'border-gray-200 hover:border-gray-300'
+                          }`}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <p className="text-sm font-semibold text-[#1C1C1C]">{addr.full_name}</p>
+                                {addr.is_default && (
+                                  <span className="text-[10px] font-semibold text-[#C9A84C] bg-[#C9A84C]/10 px-1.5 py-0.5 rounded-full">Default</span>
+                                )}
+                              </div>
+                              <p className="text-xs text-gray-500 mt-0.5">
+                                {addr.address_line1}, {addr.city}, {addr.country}
+                              </p>
+                              <p className="text-xs text-gray-400">{addr.phone}</p>
+                            </div>
+                            {selectedSavedId === addr.id && !showNewForm && (
+                              <Check size={16} className="text-[#C9A84C] shrink-0 mt-1" />
+                            )}
+                          </div>
+                        </button>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={() => { setShowNewForm(true); setSelectedSavedId(null); setAddress(EMPTY_ADDRESS); }}
+                        className={`w-full text-left p-3.5 rounded-xl border-2 transition-all flex items-center gap-2 text-sm ${
+                          showNewForm
+                            ? 'border-[#C9A84C] bg-[#C9A84C]/5 text-[#C9A84C] font-semibold'
+                            : 'border-dashed border-gray-200 text-gray-500 hover:border-gray-300'
+                        }`}
+                      >
+                        <Plus size={15} /> Enter a new address
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* New address form — shown when no saved addresses or user chose new */}
+                {(showNewForm || savedAddresses.length === 0) && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="sm:col-span-2">
                     <Field label="Full Name" required error={fieldErrors.full_name}>
@@ -412,6 +502,8 @@ export default function CheckoutPage() {
                     />
                   </Field>
                 </div>
+
+                )}
 
                 <button
                   onClick={() => { if (validateStep1()) setStep(2); }}

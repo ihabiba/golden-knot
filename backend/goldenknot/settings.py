@@ -30,6 +30,8 @@ INSTALLED_APPS = [
     "store",
     "promotions",
     "notifications",
+    "wishlist",
+    "addresses",
 ]
 
 MIDDLEWARE = [

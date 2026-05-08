@@ -198,6 +198,30 @@ export interface PromoCode {
   is_active: boolean;
 }
 
+// ─── Wishlist ────────────────────────────────────────────────────────────────
+
+export interface WishlistItem {
+  id: number;
+  product: number;
+  product_detail: Product;
+  added_at: string;
+}
+
+// ─── Addresses ───────────────────────────────────────────────────────────────
+
+export interface Address {
+  id: number;
+  full_name: string;
+  address_line1: string;
+  address_line2: string;
+  city: string;
+  country: string;
+  postal_code: string;
+  phone: string;
+  is_default: boolean;
+  created_at: string;
+}
+
 // ─── Notifications ───────────────────────────────────────────────────────────
 
 export type NotifType = 'order' | 'message' | 'payout' | 'announcement' | 'system';

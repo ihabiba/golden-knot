@@ -1,23 +1,31 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import {
   Search, ShoppingCart, Menu, X, ChevronDown,
   LayoutDashboard, Package, LogOut, User, ShieldCheck,
+  Bell, CheckCheck,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
+import { getNotifications, markAllRead } from '../api/notifications';
+import type { Notification } from '../types';
 
 export default function Navbar() {
   const { isAuthenticated, user, logout } = useAuth();
   const { itemCount } = useCart();
   const navigate = useNavigate();
 
-  const [mobileOpen, setMobileOpen]   = useState(false);
-  const [searchOpen, setSearchOpen]   = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [mobileOpen, setMobileOpen]     = useState(false);
+  const [searchOpen, setSearchOpen]     = useState(false);
+  const [searchQuery, setSearchQuery]   = useState('');
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [notifOpen, setNotifOpen]       = useState(false);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [unreadCount, setUnreadCount]   = useState(0);
+  const [markingRead, setMarkingRead]   = useState(false);
 
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const notifRef    = useRef<HTMLDivElement>(null);
   const searchRef   = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -25,10 +33,50 @@ export default function Navbar() {
       if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
         setUserMenuOpen(false);
       }
+      if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
+        setNotifOpen(false);
+      }
     }
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  const fetchNotifs = useCallback(async () => {
+    if (!isAuthenticated) return;
+    try {
+      const { data } = await getNotifications();
+      setNotifications(data.results);
+      setUnreadCount(data.results.filter((n) => !n.is_read).length);
+    } catch {
+      // silently fail
+    }
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    fetchNotifs();
+    const interval = setInterval(fetchNotifs, 60000);
+    return () => clearInterval(interval);
+  }, [fetchNotifs]);
+
+  const handleMarkAllRead = async () => {
+    setMarkingRead(true);
+    try {
+      await markAllRead();
+      setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+      setUnreadCount(0);
+    } catch {
+      // silently fail
+    } finally {
+      setMarkingRead(false);
+    }
+  };
+
+  const notifIcon = (type: Notification['notif_type']) => {
+    if (type === 'order') return '🛍️';
+    if (type === 'payout') return '💰';
+    if (type === 'announcement') return '📢';
+    return '🔔';
+  };
 
   useEffect(() => {
     if (searchOpen) searchRef.current?.focus();
@@ -154,11 +202,73 @@ export default function Navbar() {
             >
               <ShoppingCart size={19} />
               {itemCount > 0 && (
-                <span className="absolute top-0.5 right-0.5 min-w-[18px] h-[18px] bg-[#C9A84C] text-black text-[10px] font-bold rounded-full flex items-center justify-center px-1 leading-none">
+                <span className="absolute top-0.5 right-0.5 min-w-4.5 h-4.5 bg-[#C9A84C] text-black text-[10px] font-bold rounded-full flex items-center justify-center px-1 leading-none">
                   {itemCount > 99 ? '99+' : itemCount}
                 </span>
               )}
             </Link>
+
+            {/* Notification bell */}
+            {isAuthenticated && (
+              <div className="relative" ref={notifRef}>
+                <button
+                  onClick={() => { setNotifOpen((o) => !o); if (!notifOpen) fetchNotifs(); }}
+                  className="relative p-2 text-gray-300 hover:text-[#C9A84C] transition-colors duration-200 rounded-full hover:bg-white/5"
+                  aria-label="Notifications"
+                >
+                  <Bell size={19} />
+                  {unreadCount > 0 && (
+                    <span className="absolute top-0.5 right-0.5 min-w-4.5 h-4.5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 leading-none">
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </span>
+                  )}
+                </button>
+
+                {notifOpen && (
+                  <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden z-50">
+                    <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+                      <span className="text-sm font-semibold text-[#1C1C1C]">Notifications</span>
+                      {unreadCount > 0 && (
+                        <button
+                          onClick={handleMarkAllRead}
+                          disabled={markingRead}
+                          className="flex items-center gap-1 text-xs text-[#C9A84C] hover:text-[#A8872F] transition-colors"
+                        >
+                          <CheckCheck size={13} /> Mark all read
+                        </button>
+                      )}
+                    </div>
+                    <div className="max-h-80 overflow-y-auto">
+                      {notifications.length === 0 ? (
+                        <div className="px-4 py-10 text-center">
+                          <Bell size={24} className="text-gray-200 mx-auto mb-2" />
+                          <p className="text-xs text-gray-400">No notifications yet</p>
+                        </div>
+                      ) : (
+                        notifications.slice(0, 15).map((n) => (
+                          <div
+                            key={n.id}
+                            className={`flex items-start gap-3 px-4 py-3 border-b border-gray-50 last:border-0 transition-colors ${n.is_read ? '' : 'bg-[#C9A84C]/5'}`}
+                          >
+                            <span className="text-base leading-none mt-0.5 shrink-0">{notifIcon(n.notif_type)}</span>
+                            <div className="flex-1 min-w-0">
+                              <p className={`text-xs font-semibold ${n.is_read ? 'text-gray-600' : 'text-[#1C1C1C]'}`}>{n.title}</p>
+                              <p className="text-[11px] text-gray-400 mt-0.5 line-clamp-2">{n.body}</p>
+                              <p className="text-[10px] text-gray-300 mt-1">
+                                {new Date(n.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                              </p>
+                            </div>
+                            {!n.is_read && (
+                              <span className="w-2 h-2 rounded-full bg-[#C9A84C] shrink-0 mt-1" />
+                            )}
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Auth — desktop */}
             <div className="hidden md:flex items-center gap-2 ml-2">
