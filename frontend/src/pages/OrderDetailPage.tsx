@@ -40,7 +40,7 @@ const STATUS_ORDER: OrderStatus[] = ['pending', 'confirmed', 'processing', 'ship
 export default function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const { setItemCount, itemCount } = useCart();
 
   const [order, setOrder] = useState<Order | null>(null);
@@ -108,6 +108,8 @@ export default function OrderDetailPage() {
   const total    = parseFloat(order.total_price);
   const addr     = order.shipping_address;
   const isCancelledOrRefunded = order.status === 'cancelled' || order.status === 'refunded';
+  // Seller viewing a customer's fulfillment order (they are the seller, not the buyer)
+  const isSellerFulfillmentView = user?.role === 'seller' && order.customer !== user?.id;
 
   // Timeline progress
   const currentIdx = STATUS_ORDER.indexOf(order.status as OrderStatus);
@@ -312,26 +314,47 @@ export default function OrderDetailPage() {
 
         {/* CTAs */}
         <div className="flex flex-col sm:flex-row gap-3 print:hidden">
-          <button
-            onClick={handleReorder}
-            disabled={reordering}
-            className="flex-1 flex items-center justify-center gap-2 bg-[#C9A84C] hover:bg-[#D4B96A] text-black font-semibold py-3 rounded-xl text-sm transition-colors disabled:opacity-60"
-          >
-            {reordering ? <Loader2 size={14} className="animate-spin" /> : <RotateCcw size={14} />}
-            {reordering ? 'Adding to cart…' : 'Reorder'}
-          </button>
-          <button
-            onClick={() => window.print()}
-            className="flex items-center justify-center gap-2 border border-gray-200 hover:border-gray-400 text-gray-500 hover:text-gray-700 font-medium px-6 py-3 rounded-xl text-sm transition-colors"
-          >
-            <Printer size={14} /> Print Invoice
-          </button>
-          <Link
-            to="/products"
-            className="flex-1 flex items-center justify-center gap-2 border border-gray-200 hover:border-[#C9A84C] text-gray-600 hover:text-[#C9A84C] font-medium py-3 rounded-xl text-sm transition-colors"
-          >
-            <ShoppingBag size={14} /> Continue Shopping
-          </Link>
+          {isSellerFulfillmentView ? (
+            // Seller fulfillment view — no reorder, show relevant actions
+            <>
+              <button
+                onClick={() => window.print()}
+                className="flex-1 flex items-center justify-center gap-2 bg-[#C9A84C] hover:bg-[#D4B96A] text-black font-semibold py-3 rounded-xl text-sm transition-colors"
+              >
+                <Printer size={14} /> Print Packing Slip
+              </button>
+              <Link
+                to="/seller/dashboard"
+                className="flex-1 flex items-center justify-center gap-2 border border-gray-200 hover:border-[#C9A84C] text-gray-600 hover:text-[#C9A84C] font-medium py-3 rounded-xl text-sm transition-colors"
+              >
+                <ArrowLeft size={14} /> Back to Dashboard
+              </Link>
+            </>
+          ) : (
+            // Customer view (or seller viewing their own purchase)
+            <>
+              <button
+                onClick={handleReorder}
+                disabled={reordering}
+                className="flex-1 flex items-center justify-center gap-2 bg-[#C9A84C] hover:bg-[#D4B96A] text-black font-semibold py-3 rounded-xl text-sm transition-colors disabled:opacity-60"
+              >
+                {reordering ? <Loader2 size={14} className="animate-spin" /> : <RotateCcw size={14} />}
+                {reordering ? 'Adding to cart…' : 'Reorder'}
+              </button>
+              <button
+                onClick={() => window.print()}
+                className="flex items-center justify-center gap-2 border border-gray-200 hover:border-gray-400 text-gray-500 hover:text-gray-700 font-medium px-6 py-3 rounded-xl text-sm transition-colors"
+              >
+                <Printer size={14} /> Print Invoice
+              </button>
+              <Link
+                to="/products"
+                className="flex-1 flex items-center justify-center gap-2 border border-gray-200 hover:border-[#C9A84C] text-gray-600 hover:text-[#C9A84C] font-medium py-3 rounded-xl text-sm transition-colors"
+              >
+                <ShoppingBag size={14} /> Continue Shopping
+              </Link>
+            </>
+          )}
         </div>
       </div>
     </div>

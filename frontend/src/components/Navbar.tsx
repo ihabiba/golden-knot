@@ -346,8 +346,10 @@ export default function Navbar() {
                     onClick={() => setUserMenuOpen((o) => !o)}
                     className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors duration-200"
                   >
-                    <span className="w-8 h-8 rounded-full bg-[#C9A84C] text-black font-semibold text-sm flex items-center justify-center shrink-0">
-                      {getInitials()}
+                    <span className="w-8 h-8 rounded-full bg-[#C9A84C] text-black font-semibold text-sm flex items-center justify-center shrink-0 overflow-hidden">
+                      {user?.avatar
+                        ? <img src={user.avatar} alt="avatar" className="w-full h-full object-cover" />
+                        : getInitials()}
                     </span>
                     <ChevronDown size={14} className={`transition-transform duration-200 ${userMenuOpen ? 'rotate-180' : ''}`} />
                   </button>
@@ -424,9 +426,11 @@ export default function Navbar() {
             {isAuthenticated ? (
               <button
                 onClick={() => setUserMenuOpen((o) => !o)}
-                className="md:hidden w-8 h-8 rounded-full bg-[#C9A84C] text-black font-semibold text-sm flex items-center justify-center shrink-0"
+                className="md:hidden w-8 h-8 rounded-full bg-[#C9A84C] text-black font-semibold text-sm flex items-center justify-center shrink-0 overflow-hidden"
               >
-                {getInitials()}
+                {user?.avatar
+                  ? <img src={user.avatar} alt="avatar" className="w-full h-full object-cover" />
+                  : getInitials()}
               </button>
             ) : (
               <Link to="/login" className="md:hidden p-2 text-gray-300 hover:text-[#C9A84C] transition-colors">

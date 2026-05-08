@@ -30,13 +30,25 @@ class OrderItemSerializer(serializers.ModelSerializer):
 
 class OrderSerializer(serializers.ModelSerializer):
     items = OrderItemSerializer(many=True, read_only=True)
+    customer_username = serializers.CharField(source="customer.username", read_only=True)
+    customer_email    = serializers.CharField(source="customer.email",    read_only=True)
+    customer_avatar   = serializers.SerializerMethodField()
+    customer_joined   = serializers.DateTimeField(source="customer.created_at", read_only=True)
 
     class Meta:
         model = Order
         fields = [
-            "id", "customer", "status", "total_price", "shipping_address",
+            "id", "customer", "customer_username", "customer_email",
+            "customer_avatar", "customer_joined",
+            "status", "total_price", "shipping_address",
             "promo_code", "discount_amount", "payment_id", "payment_status",
             "tracking_number", "shipping_carrier",
             "items", "created_at", "updated_at",
         ]
         read_only_fields = ["id", "customer", "created_at", "updated_at"]
+
+    def get_customer_avatar(self, obj) -> str | None:
+        if not obj.customer.avatar:
+            return None
+        request = self.context.get("request")
+        return request.build_absolute_uri(obj.customer.avatar.url) if request else obj.customer.avatar.url

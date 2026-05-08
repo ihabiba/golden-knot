@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 import {
   LayoutDashboard, Package, ShoppingBag, DollarSign, User as UserIcon,
   Plus, Pencil, Trash2, ChevronDown, Loader2, Star, TrendingUp, X,
-  ImagePlus, Truck,
+  ImagePlus, Truck, Eye, Calendar, Mail,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { getProducts, createProduct, updateProduct, deleteProduct, uploadProductImage, deleteProductImage } from '../api/products';
@@ -516,12 +516,92 @@ function ProductsSection() {
   );
 }
 
+// ─── Customer Mini-Profile Modal ──────────────────────────────────────────────
+
+function CustomerProfileModal({
+  order,
+  allOrders,
+  onClose,
+}: {
+  order: Order;
+  allOrders: Order[];
+  onClose: () => void;
+}) {
+  const ordersFromCustomer = allOrders.filter((o) => o.customer === order.customer);
+  const totalSpent = ordersFromCustomer
+    .filter((o) => o.status === 'delivered')
+    .reduce((s, o) => s + parseFloat(o.total_price), 0);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
+        {/* Header */}
+        <div className="bg-[#0A0A0A] px-6 py-5 flex items-center justify-between">
+          <h3 className="font-display font-bold text-white">Customer Profile</h3>
+          <button onClick={onClose} className="text-gray-500 hover:text-white transition-colors"><X size={18} /></button>
+        </div>
+
+        {/* Avatar + name */}
+        <div className="px-6 py-6 flex items-center gap-4 border-b border-gray-100">
+          <div className="w-14 h-14 rounded-full bg-[#C9A84C]/15 overflow-hidden flex items-center justify-center text-[#C9A84C] text-xl font-bold font-display shrink-0">
+            {order.customer_avatar
+              ? <img src={order.customer_avatar} alt={order.customer_username} className="w-full h-full object-cover" />
+              : order.customer_username?.charAt(0).toUpperCase()}
+          </div>
+          <div>
+            <p className="font-semibold text-[#1C1C1C]">{order.customer_username}</p>
+            <p className="text-xs text-gray-500 mt-0.5 flex items-center gap-1.5">
+              <Mail size={11} /> {order.customer_email}
+            </p>
+          </div>
+        </div>
+
+        {/* Stats */}
+        <div className="px-6 py-5 space-y-3">
+          <div className="flex items-center justify-between text-sm">
+            <span className="flex items-center gap-2 text-gray-500"><Calendar size={14} /> Member since</span>
+            <span className="font-medium text-[#1C1C1C]">
+              {new Date(order.customer_joined).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })}
+            </span>
+          </div>
+          <div className="flex items-center justify-between text-sm">
+            <span className="flex items-center gap-2 text-gray-500"><ShoppingBag size={14} /> Orders from you</span>
+            <span className="font-semibold text-[#1C1C1C]">{ordersFromCustomer.length}</span>
+          </div>
+          <div className="flex items-center justify-between text-sm">
+            <span className="flex items-center gap-2 text-gray-500"><DollarSign size={14} /> Total spent (delivered)</span>
+            <span className="font-semibold text-[#C9A84C]">${totalSpent.toFixed(2)}</span>
+          </div>
+        </div>
+
+        {/* Shipping address for this order */}
+        <div className="px-6 pb-5">
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Shipping address for Order #{order.id}</p>
+          <div className="bg-[#FAFAF8] rounded-xl p-3 text-sm text-gray-600 space-y-0.5">
+            <p className="font-medium text-[#1C1C1C]">{order.shipping_address.full_name}</p>
+            <p>{order.shipping_address.address_line1}{order.shipping_address.address_line2 ? `, ${order.shipping_address.address_line2}` : ''}</p>
+            <p>{order.shipping_address.city}, {order.shipping_address.country} {order.shipping_address.postal_code}</p>
+            <p className="text-gray-400 text-xs">{order.shipping_address.phone}</p>
+          </div>
+        </div>
+
+        <div className="px-6 pb-5">
+          <button onClick={onClose} className="w-full border border-gray-200 text-gray-600 font-medium py-2.5 rounded-xl text-sm hover:border-gray-400 transition-colors">
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Orders Section ───────────────────────────────────────────────────────────
 
 function SellerOrdersSection() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<number | null>(null);
+  const [profileOrder, setProfileOrder] = useState<Order | null>(null);
 
   // Tracking modal state
   const [shipTarget, setShipTarget] = useState<number | null>(null);
@@ -591,18 +671,23 @@ function SellerOrdersSection() {
               <thead>
                 <tr className="border-b border-gray-100 bg-[#FAFAF8]">
                   <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Order</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide hidden sm:table-cell">Items</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Total</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Customer</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide hidden md:table-cell">Ship To</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide hidden sm:table-cell">Total</th>
                   <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
-                  <th className="text-right px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Update</th>
+                  <th className="text-right px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {orders.map((order) => (
                   <tr key={order.id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50/50">
-                    <td className="px-5 py-3.5">
-                      <p className="font-medium text-[#1C1C1C]">#{order.id}</p>
-                      <p className="text-xs text-gray-400">
+
+                    {/* Order ID + date + tracking */}
+                    <td className="px-5 py-4">
+                      <Link to={`/orders/${order.id}`} className="font-medium text-[#1C1C1C] hover:text-[#C9A84C] transition-colors">
+                        #{order.id}
+                      </Link>
+                      <p className="text-xs text-gray-400 mt-0.5">
                         {new Date(order.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
                       </p>
                       {order.tracking_number && (
@@ -611,28 +696,63 @@ function SellerOrdersSection() {
                         </p>
                       )}
                     </td>
-                    <td className="px-4 py-3.5 hidden sm:table-cell text-gray-600">
-                      {order.items.length} item{order.items.length !== 1 ? 's' : ''}
+
+                    {/* Customer avatar + name — clickable for profile */}
+                    <td className="px-4 py-4">
+                      <button
+                        onClick={() => setProfileOrder(order)}
+                        className="flex items-center gap-2 group"
+                      >
+                        <div className="w-7 h-7 rounded-full bg-[#C9A84C]/15 overflow-hidden flex items-center justify-center text-[#C9A84C] text-xs font-bold shrink-0">
+                          {order.customer_avatar
+                            ? <img src={order.customer_avatar} alt={order.customer_username} className="w-full h-full object-cover" />
+                            : order.customer_username?.charAt(0).toUpperCase()}
+                        </div>
+                        <span className="text-xs font-medium text-[#1C1C1C] group-hover:text-[#C9A84C] transition-colors">
+                          {order.customer_username}
+                        </span>
+                      </button>
                     </td>
-                    <td className="px-4 py-3.5 font-semibold text-[#1C1C1C]">
+
+                    {/* Ship-to city */}
+                    <td className="px-4 py-4 hidden md:table-cell">
+                      <p className="text-xs text-gray-600">{order.shipping_address.full_name}</p>
+                      <p className="text-xs text-gray-400">{order.shipping_address.city}, {order.shipping_address.country}</p>
+                    </td>
+
+                    {/* Total */}
+                    <td className="px-4 py-4 hidden sm:table-cell font-semibold text-[#1C1C1C]">
                       ${parseFloat(order.total_price).toFixed(2)}
                     </td>
-                    <td className="px-4 py-3.5">
+
+                    {/* Status badge */}
+                    <td className="px-4 py-4">
                       <StatusBadge status={order.status} size="sm" />
                     </td>
-                    <td className="px-5 py-3.5 text-right">
-                      <div className="relative inline-block">
-                        <select
-                          value={order.status}
-                          disabled={updatingId === order.id}
-                          onChange={(e) => handleStatusChange(order.id, e.target.value)}
-                          className="appearance-none bg-gray-50 border border-gray-200 rounded-lg pl-3 pr-7 py-1.5 text-xs text-gray-700 focus:outline-none focus:border-[#C9A84C] cursor-pointer disabled:opacity-50"
+
+                    {/* Update status + view */}
+                    <td className="px-5 py-4 text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <Link
+                          to={`/orders/${order.id}`}
+                          className="p-1.5 text-gray-400 hover:text-[#C9A84C] transition-colors rounded-lg hover:bg-[#C9A84C]/10"
+                          title="View order details"
                         >
-                          {ORDER_STATUSES.map((s) => (
-                            <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
-                          ))}
-                        </select>
-                        <ChevronDown size={11} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                          <Eye size={14} />
+                        </Link>
+                        <div className="relative inline-block">
+                          <select
+                            value={order.status}
+                            disabled={updatingId === order.id}
+                            onChange={(e) => handleStatusChange(order.id, e.target.value)}
+                            className="appearance-none bg-gray-50 border border-gray-200 rounded-lg pl-3 pr-7 py-1.5 text-xs text-gray-700 focus:outline-none focus:border-[#C9A84C] cursor-pointer disabled:opacity-50"
+                          >
+                            {ORDER_STATUSES.map((s) => (
+                              <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
+                            ))}
+                          </select>
+                          <ChevronDown size={11} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                        </div>
                       </div>
                     </td>
                   </tr>
@@ -641,6 +761,15 @@ function SellerOrdersSection() {
             </table>
           </div>
         </div>
+
+        {/* Customer mini-profile modal */}
+        {profileOrder && (
+          <CustomerProfileModal
+            order={profileOrder}
+            allOrders={orders}
+            onClose={() => setProfileOrder(null)}
+          />
+        )}
       )}
 
       {/* Tracking info modal — shown when seller marks an order as shipped */}

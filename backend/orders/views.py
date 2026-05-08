@@ -19,7 +19,11 @@ class OrderViewSet(viewsets.ModelViewSet):
         if user.role == "admin":
             qs = qs.select_related("customer")
         elif user.role == "seller":
-            qs = qs.filter(items__seller=user).distinct()
+            # as_customer=true → show orders the seller placed as a buyer
+            if self.request.query_params.get("as_customer") == "true":
+                qs = qs.filter(customer=user)
+            else:
+                qs = qs.filter(items__seller=user).distinct()
         else:
             qs = qs.filter(customer=user)
 

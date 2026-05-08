@@ -94,6 +94,10 @@ export interface OrderItem {
 export interface Order {
   id: number;
   customer: number;
+  customer_username: string;
+  customer_email: string;
+  customer_avatar: string | null;
+  customer_joined: string;
   status: OrderStatus;
   total_price: string;
   shipping_address: ShippingAddress;

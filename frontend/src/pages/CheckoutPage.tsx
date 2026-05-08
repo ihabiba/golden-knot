@@ -624,19 +624,19 @@ export default function CheckoutPage() {
             {step === 3 && (
               <div className="animate-step-in space-y-4">
 
-                {/* HesabPay placeholder */}
+                {/* Cash on Delivery */}
                 <div className="bg-white rounded-xl border border-gray-100 p-8 text-center">
                   <div className="w-16 h-16 rounded-full bg-[#C9A84C]/10 flex items-center justify-center mx-auto mb-4">
-                    <CreditCard size={28} className="text-[#C9A84C]" />
+                    <Package size={28} className="text-[#C9A84C]" />
                   </div>
                   <h3 className="font-display text-xl font-bold text-[#1C1C1C] mb-2">
-                    Secure Payment
+                    Cash on Delivery
                   </h3>
                   <p className="text-gray-500 text-sm mb-1">
-                    HesabPay integration coming soon.
+                    Pay when your order arrives at your door.
                   </p>
                   <p className="text-gray-400 text-xs mb-8">
-                    For now, use test mode to complete your order.
+                    Online payment via HesabPay is coming soon.
                   </p>
 
                   {/* Order total reminder */}
@@ -662,7 +662,7 @@ export default function CheckoutPage() {
                     {placeLoading ? (
                       <><Loader2 size={16} className="animate-spin" /> Placing order…</>
                     ) : (
-                      <><Check size={16} /> Pay with Test Mode — ${total.toFixed(2)}</>
+                      <><Check size={16} /> Place Order — Pay on Delivery (${total.toFixed(2)})</>
                     )}
                   </button>
                 </div>

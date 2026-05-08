@@ -25,7 +25,7 @@ const PALETTES = [
 ] as const;
 
 export default function OrdersPage() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -33,11 +33,13 @@ export default function OrdersPage() {
 
   useEffect(() => {
     if (!isAuthenticated) { navigate('/login', { replace: true }); return; }
-    getOrders()
+    // Sellers using "My Orders" always see orders they placed as buyers
+    const params = user?.role === 'seller' ? { as_customer: 'true' } : {};
+    getOrders(params)
       .then(({ data }) => setOrders(data.results))
       .catch(() => toast.error('Failed to load orders.'))
       .finally(() => setLoading(false));
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, navigate, user?.role]);
 
   const filtered = activeTab === 'all'
     ? orders

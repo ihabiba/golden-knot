@@ -159,12 +159,14 @@ function ProfileSection() {
 // ─── Orders Section ──────────────────────────────────────────────────────────
 
 function OrdersSection() {
+  const { user } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeStatus, setActiveStatus] = useState<string>('all');
 
   useEffect(() => {
-    getOrders()
+    const params = user?.role === 'seller' ? { as_customer: 'true' } : {};
+    getOrders(params)
       .then(({ data }) => setOrders(data.results))
       .catch(() => toast.error('Failed to load orders.'))
       .finally(() => setLoading(false));
