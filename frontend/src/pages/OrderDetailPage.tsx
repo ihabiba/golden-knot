@@ -3,14 +3,15 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
   ArrowLeft, Package, MapPin, Printer, ShoppingBag, CheckCircle2, Truck,
-  Clock, XCircle, RotateCcw, Loader2, ExternalLink,
+  Clock, XCircle, RotateCcw, Loader2, ExternalLink, Ban,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
-import { getOrder } from '../api/orders';
+import { getOrder, updateOrderStatus } from '../api/orders';
 import { addToCart } from '../api/cart';
 import { parseApiError } from '../utils/apiError';
 import StatusBadge from '../components/StatusBadge';
+import ConfirmModal from '../components/ConfirmModal';
 import type { Order, OrderStatus } from '../types';
 
 const PALETTES = [
@@ -47,6 +48,8 @@ export default function OrderDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [reordering, setReordering] = useState(false);
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated) { navigate('/login', { replace: true }); return; }
@@ -56,6 +59,21 @@ export default function OrderDetailPage() {
       .catch((err) => setError(parseApiError(err)))
       .finally(() => setLoading(false));
   }, [id, isAuthenticated, navigate]);
+
+  const handleCancel = async () => {
+    if (!order) return;
+    setCancelling(true);
+    try {
+      const { data } = await updateOrderStatus(order.id, { status: 'cancelled' });
+      setOrder(data);
+      toast.success('Order cancelled successfully.');
+    } catch (err) {
+      toast.error(parseApiError(err));
+    } finally {
+      setCancelling(false);
+      setCancelOpen(false);
+    }
+  };
 
   const handleReorder = async () => {
     if (!order) return;
@@ -118,6 +136,9 @@ export default function OrderDetailPage() {
   const isCancelledOrRefunded = order.status === 'cancelled' || order.status === 'refunded';
   // Seller viewing a customer's fulfillment order (they are the seller, not the buyer)
   const isSellerFulfillmentView = user?.role === 'seller' && order.customer !== user?.id;
+  // Customer can cancel only if the order hasn't shipped yet
+  const canCancel = !isSellerFulfillmentView
+    && ['pending', 'confirmed', 'processing'].includes(order.status);
 
   // Timeline progress
   const currentIdx = STATUS_ORDER.indexOf(order.status as OrderStatus);
@@ -374,8 +395,29 @@ export default function OrderDetailPage() {
               </Link>
             </>
           )}
+
+          {/* Cancel order — only for customer while order is not yet shipped */}
+          {canCancel && (
+            <button
+              onClick={() => setCancelOpen(true)}
+              className="w-full flex items-center justify-center gap-2 text-red-500 hover:text-red-600 border border-red-200 hover:border-red-300 hover:bg-red-50 font-medium py-3 rounded-xl text-sm transition-colors mt-1"
+            >
+              <Ban size={14} /> Cancel Order
+            </button>
+          )}
         </div>
       </div>
+
+      <ConfirmModal
+        isOpen={cancelOpen}
+        onClose={() => setCancelOpen(false)}
+        onConfirm={handleCancel}
+        loading={cancelling}
+        title="Cancel this order?"
+        message={`Cancel your order for "${itemSummary(order.items)}"? This cannot be undone. The seller will be notified.`}
+        confirmLabel="Yes, Cancel Order"
+        variant="danger"
+      />
     </div>
   );
 }
