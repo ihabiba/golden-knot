@@ -495,7 +495,7 @@ function AddressModal({
             { key: 'city', label: 'City', placeholder: 'Kabul' },
             { key: 'postal_code', label: 'Postal Code', placeholder: '00000' },
             { key: 'phone', label: 'Phone', placeholder: '+93 70 000 0000' },
-          ]) as Array<{ key: keyof typeof form; label: string; span?: boolean; placeholder: string }>).map(({ key, label, span, placeholder }) => (
+          ]) as Array<{ key: 'full_name' | 'address_line1' | 'address_line2' | 'city' | 'postal_code' | 'phone'; label: string; span?: boolean; placeholder: string }>).map(({ key, label, span, placeholder }) => (
             <div key={key} className={span ? 'sm:col-span-2' : ''}>
               <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">{label}</label>
               <input
