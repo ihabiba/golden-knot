@@ -131,7 +131,7 @@ export default function Footer() {
             &copy; {new Date().getFullYear()} Golden Knot. All rights reserved.
           </p>
           <p className="text-gray-600 text-sm">
-            Developed by{' '}
+            Built with ❤️ by{' '}
             <a
               href="https://github.com/ihabiba"
               target="_blank"
