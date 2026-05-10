@@ -24,6 +24,14 @@ const PALETTES = [
   ['#8B2525', '#1C1C1C', '#C9A84C'],
 ] as const;
 
+function itemSummary(items: Order['items']) {
+  const names = items.map((i) => i.product_name);
+  if (names.length === 0) return '';
+  if (names.length === 1) return names[0];
+  if (names.length === 2) return `${names[0]} & ${names[1]}`;
+  return `${names[0]} +${names.length - 1} more`;
+}
+
 export default function OrdersPage() {
   const { isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
@@ -118,6 +126,7 @@ export default function OrdersPage() {
                       <p className="font-semibold text-sm text-[#1C1C1C]">Order #{order.id}</p>
                       <StatusBadge status={order.status} showDot size="sm" />
                     </div>
+                    <p className="text-sm text-gray-700 mt-0.5 line-clamp-1">{itemSummary(order.items)}</p>
                     <p className="text-xs text-gray-400 mt-0.5">
                       {new Date(order.created_at).toLocaleDateString('en-GB', {
                         day: 'numeric', month: 'long', year: 'numeric',

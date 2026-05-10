@@ -223,6 +223,10 @@ function OrdersSection() {
               <div className="flex items-start justify-between gap-3 mb-3">
                 <div>
                   <p className="text-sm font-semibold text-[#1C1C1C]">Order #{order.id}</p>
+                  <p className="text-sm text-gray-700 mt-0.5 line-clamp-1">
+                    {order.items.map((i) => i.product_name).slice(0, 2).join(' & ')}
+                    {order.items.length > 2 ? ` +${order.items.length - 2} more` : ''}
+                  </p>
                   <p className="text-xs text-gray-400 mt-0.5">
                     {new Date(order.created_at).toLocaleDateString('en-GB', {
                       day: 'numeric', month: 'short', year: 'numeric',

@@ -103,6 +103,14 @@ export default function OrderDetailPage() {
     );
   }
 
+  const itemSummary = (items: typeof order.items) => {
+    const names = items.map((i) => i.product_name);
+    if (names.length === 0) return '';
+    if (names.length === 1) return names[0];
+    if (names.length === 2) return `${names[0]} & ${names[1]}`;
+    return `${names[0]} +${names.length - 1} more`;
+  };
+
   const subtotal = parseFloat(order.total_price) + parseFloat(order.discount_amount);
   const discount = parseFloat(order.discount_amount);
   const total    = parseFloat(order.total_price);
@@ -128,7 +136,13 @@ export default function OrderDetailPage() {
           </button>
           <div>
             <h1 className="font-display text-xl font-bold text-[#1C1C1C]">Order #{order.id}</h1>
-            <p className="text-xs text-gray-500 mt-0.5">
+            <p className="text-sm text-gray-700 mt-0.5 line-clamp-1">{itemSummary(order.items)}</p>
+            {isSellerFulfillmentView && (
+              <p className="text-xs text-[#C9A84C] font-medium mt-0.5">
+                from {order.customer_username} · {order.shipping_address.city}, {order.shipping_address.country}
+              </p>
+            )}
+            <p className="text-xs text-gray-400 mt-0.5">
               Placed on {new Date(order.created_at).toLocaleDateString('en-GB', {
                 day: 'numeric', month: 'long', year: 'numeric',
               })}
