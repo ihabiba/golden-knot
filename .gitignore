@@ -17,5 +17,9 @@ frontend/.env
 .DS_Store
 Thumbs.db
 
-# AI context 
+# AI context
 CLAUDE.md
+
+# Secrets — extra safety net
+*.env
+!*.env.example

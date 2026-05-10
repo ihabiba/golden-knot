@@ -477,14 +477,44 @@ All TypeScript interfaces in one file:
 - [x] `api/orders.ts`: `updateOrderStatus` accepts `tracking_number` + `shipping_carrier`
 - [x] `tsc --noEmit` → 0 errors, `manage.py check` → 0 issues
 
+### Done ✅ (UX polish + order management)
+- [x] Backend: `as_customer=true` param — sellers see own purchases on My Orders page
+- [x] Backend: `OrderSerializer` adds `customer_username/email/avatar/joined` for seller order view
+- [x] Backend: Status-change notifications (confirmed, shipped, delivered, cancelled, refunded)
+- [x] Backend: Seller approval/suspension notifications, payout completed/failed notifications
+- [x] Backend: Better notification titles — product name + amount instead of bare order ID
+- [x] Frontend: `ScrollToTop` on every route change (fixes footer link scroll position)
+- [x] Frontend: Navbar avatar shows real image (`mediaUrl()` utility fixes relative paths)
+- [x] Frontend: `cursor: pointer` globally via CSS (all buttons/links show hand cursor)
+- [x] Frontend: `mediaUrl()` utility — resolves relative Django paths to absolute URLs
+- [x] Frontend: Seller Dashboard Orders — customer column, ship-to, CustomerProfileModal
+- [x] Frontend: `OrderDetailPage` — seller fulfillment view (Print Packing Slip, Back to Dashboard)
+- [x] Frontend: Cash on Delivery checkout (replaces "test mode")
+- [x] Frontend: Order cancellation button (visible when status is pending/confirmed/processing)
+- [x] Frontend: Product name as headline everywhere orders appear (list, detail, account)
+- [x] Frontend: Google Translate restore properly clears `googtrans` cookie + reloads
+- [x] Frontend: Clickable notifications navigate to order/payout with optimistic read marking
+
+### Done ✅ (production readiness)
+- [x] `gunicorn` + `whitenoise` added to requirements.txt
+- [x] `settings.py` — `DEBUG` defaults to `False`, WhiteNoise middleware, HTTPS security headers, SECURE_PROXY_SSL_HEADER for Render
+- [x] `backend/build.sh` — pip install + collectstatic + migrate (Render build script)
+- [x] `render.yaml` — Render blueprint at project root (web service config, env var placeholders)
+- [x] `frontend/vercel.json` — SPA rewrite rules for React Router (all routes → index.html)
+- [x] `backend/.env.example` — comprehensive, notes required vs optional vars
+- [x] `frontend/.env.example` — includes production Vercel note
+- [x] `.gitignore` — extra safety net (`*.env` excluded, `*.env.example` whitelisted)
+- [x] `README.md` — full deployment guide: Render + Vercel, env vars table, post-deploy steps
+
 ### To Build Next
 - [ ] Backend: HesabPay payment gateway integration
+- [ ] Backend: Customer cancel generates seller notification
 - [ ] Admin dashboard: pagination for large tables
 - [ ] OrdersPage / AccountPage: paginate large order lists
-- [ ] Lengthen `SECRET_KEY` in `.env` to 50+ chars before production
 
 ### Later
 - [ ] Multi-currency display
 - [ ] SEO meta tags + sitemap
 - [ ] Performance tuning + image optimization
 - [ ] Additional payment gateways
+- [ ] Real-time chat / messaging between buyers and sellers

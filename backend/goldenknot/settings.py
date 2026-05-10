@@ -5,9 +5,15 @@ from datetime import timedelta
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = config("SECRET_KEY", default="change-me-in-production")
-DEBUG = config("DEBUG", default=True, cast=bool)
-ALLOWED_HOSTS = config("ALLOWED_HOSTS", default="localhost,127.0.0.1").split(",")
+SECRET_KEY = config("SECRET_KEY", default="change-me-before-production-use-a-50-char-random-string")
+
+# Default False — must be explicitly set True in local .env
+DEBUG = config("DEBUG", default=False, cast=bool)
+
+ALLOWED_HOSTS = config(
+    "ALLOWED_HOSTS",
+    default="localhost,127.0.0.1,.onrender.com",
+).split(",")
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -47,8 +53,9 @@ if USE_CLOUDINARY:
     DEFAULT_FILE_STORAGE = "cloudinary_storage.storage.MediaCloudinaryStorage"
 
 MIDDLEWARE = [
-    "corsheaders.middleware.CorsMiddleware",
+    "corsheaders.middleware.CorsMiddleware",          # must be first
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",     # static file serving
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -101,17 +108,31 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
+# WhiteNoise — serve static files from STATICFILES_DIRS during development too
+WHITENOISE_USE_FINDERS = True
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 AUTH_USER_MODEL = "users.User"
 
-# CORS
+# ── CORS ─────────────────────────────────────────────────────────────────────
 CORS_ALLOWED_ORIGINS = config(
-    "CORS_ALLOWED_ORIGINS", default="http://localhost:5173"
+    "CORS_ALLOWED_ORIGINS",
+    default="http://localhost:5173",
 ).split(",")
 CORS_ALLOW_CREDENTIALS = True
 
-# DRF
+# ── Security (HTTPS / Render proxy) ──────────────────────────────────────────
+# Render terminates TLS at the load balancer and forwards X-Forwarded-Proto
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+SECURE_SSL_REDIRECT = not DEBUG          # force HTTPS in production
+SESSION_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SECURE = not DEBUG
+SECURE_HSTS_SECONDS = 0 if DEBUG else 31536000
+SECURE_HSTS_INCLUDE_SUBDOMAINS = not DEBUG
+SECURE_HSTS_PRELOAD = not DEBUG
+
+# ── DRF ──────────────────────────────────────────────────────────────────────
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
@@ -123,7 +144,7 @@ REST_FRAMEWORK = {
     "PAGE_SIZE": 20,
 }
 
-# JWT
+# ── JWT ───────────────────────────────────────────────────────────────────────
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(
         minutes=config("JWT_ACCESS_TOKEN_LIFETIME_MINUTES", default=60, cast=int)
