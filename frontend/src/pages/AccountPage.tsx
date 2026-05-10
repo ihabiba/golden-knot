@@ -251,7 +251,6 @@ function OrdersSection() {
                   <div className="flex items-center justify-between mt-3 pt-2 border-t border-gray-50">
                     <p className="font-semibold text-sm text-[#1C1C1C]">${parseFloat(order.total_price).toFixed(2)}</p>
                     <div className="flex items-center gap-2">
-                      <span className="text-[11px] text-gray-300">ref #{order.id}</span>
                       <span className="flex items-center gap-1 text-xs text-[#C9A84C] font-medium opacity-0 group-hover:opacity-100 transition-opacity">
                         View Details <ChevronRight size={11} />
                       </span>

@@ -157,12 +157,9 @@ export default function OrdersPage() {
                             </span>
                           )}
                         </p>
-                        <div className="flex items-center gap-2">
-                          <span className="text-[11px] text-gray-300">ref #{order.id}</span>
-                          <span className="text-xs text-[#C9A84C] font-medium opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0.5">
-                            View <ChevronRight size={11} />
-                          </span>
-                        </div>
+                        <span className="text-xs text-[#C9A84C] font-medium opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0.5">
+                          View <ChevronRight size={11} />
+                        </span>
                       </div>
                     </div>
                   </div>

@@ -171,7 +171,7 @@ export default function OrderDetailPage() {
             <p className="text-xs text-gray-400 mt-0.5">
               {new Date(order.created_at).toLocaleDateString('en-GB', {
                 day: 'numeric', month: 'long', year: 'numeric',
-              })} · <span className="text-gray-300">ref #{order.id}</span>
+              })}
             </p>
           </div>
           <div className="ml-auto">
@@ -353,57 +353,58 @@ export default function OrderDetailPage() {
         </div>
 
         {/* CTAs */}
-        <div className="flex flex-col sm:flex-row gap-3 print:hidden">
+        <div className="print:hidden space-y-2">
           {isSellerFulfillmentView ? (
-            // Seller fulfillment view — no reorder, show relevant actions
-            <>
+            <div className="grid grid-cols-2 gap-2">
               <button
                 onClick={() => window.print()}
-                className="flex-1 flex items-center justify-center gap-2 bg-[#C9A84C] hover:bg-[#D4B96A] text-black font-semibold py-3 rounded-xl text-sm transition-colors"
+                className="flex items-center justify-center gap-2 bg-[#C9A84C] hover:bg-[#D4B96A] text-black font-semibold py-3 rounded-xl text-sm transition-colors"
               >
                 <Printer size={14} /> Print Packing Slip
               </button>
               <Link
                 to="/seller/dashboard"
-                className="flex-1 flex items-center justify-center gap-2 border border-gray-200 hover:border-[#C9A84C] text-gray-600 hover:text-[#C9A84C] font-medium py-3 rounded-xl text-sm transition-colors"
+                className="flex items-center justify-center gap-2 border border-gray-200 hover:border-[#C9A84C] text-gray-600 hover:text-[#C9A84C] font-medium py-3 rounded-xl text-sm transition-colors"
               >
                 <ArrowLeft size={14} /> Back to Dashboard
               </Link>
-            </>
+            </div>
           ) : (
-            // Customer view (or seller viewing their own purchase)
             <>
-              <button
-                onClick={handleReorder}
-                disabled={reordering}
-                className="flex-1 flex items-center justify-center gap-2 bg-[#C9A84C] hover:bg-[#D4B96A] text-black font-semibold py-3 rounded-xl text-sm transition-colors disabled:opacity-60"
-              >
-                {reordering ? <Loader2 size={14} className="animate-spin" /> : <RotateCcw size={14} />}
-                {reordering ? 'Adding to cart…' : 'Reorder'}
-              </button>
-              <button
-                onClick={() => window.print()}
-                className="flex items-center justify-center gap-2 border border-gray-200 hover:border-gray-400 text-gray-500 hover:text-gray-700 font-medium px-6 py-3 rounded-xl text-sm transition-colors"
-              >
-                <Printer size={14} /> Print Invoice
-              </button>
-              <Link
-                to="/products"
-                className="flex-1 flex items-center justify-center gap-2 border border-gray-200 hover:border-[#C9A84C] text-gray-600 hover:text-[#C9A84C] font-medium py-3 rounded-xl text-sm transition-colors"
-              >
-                <ShoppingBag size={14} /> Continue Shopping
-              </Link>
-            </>
-          )}
+              {/* Primary row */}
+              <div className="grid grid-cols-3 gap-2">
+                <button
+                  onClick={handleReorder}
+                  disabled={reordering}
+                  className="flex items-center justify-center gap-2 bg-[#C9A84C] hover:bg-[#D4B96A] text-black font-semibold py-3 rounded-xl text-sm transition-colors disabled:opacity-60"
+                >
+                  {reordering ? <Loader2 size={14} className="animate-spin" /> : <RotateCcw size={14} />}
+                  {reordering ? 'Adding…' : 'Reorder'}
+                </button>
+                <button
+                  onClick={() => window.print()}
+                  className="flex items-center justify-center gap-2 border border-gray-200 hover:border-gray-400 text-gray-500 hover:text-gray-700 font-medium py-3 rounded-xl text-sm transition-colors"
+                >
+                  <Printer size={14} /> Print
+                </button>
+                <Link
+                  to="/products"
+                  className="flex items-center justify-center gap-2 border border-gray-200 hover:border-[#C9A84C] text-gray-600 hover:text-[#C9A84C] font-medium py-3 rounded-xl text-sm transition-colors"
+                >
+                  <ShoppingBag size={14} /> Shop More
+                </Link>
+              </div>
 
-          {/* Cancel order — only for customer while order is not yet shipped */}
-          {canCancel && (
-            <button
-              onClick={() => setCancelOpen(true)}
-              className="w-full flex items-center justify-center gap-2 text-red-500 hover:text-red-600 border border-red-200 hover:border-red-300 hover:bg-red-50 font-medium py-3 rounded-xl text-sm transition-colors mt-1"
-            >
-              <Ban size={14} /> Cancel Order
-            </button>
+              {/* Cancel — same width, below */}
+              {canCancel && (
+                <button
+                  onClick={() => setCancelOpen(true)}
+                  className="w-full flex items-center justify-center gap-2 text-red-500 hover:text-red-600 border border-red-200 hover:border-red-300 hover:bg-red-50 font-medium py-3 rounded-xl text-sm transition-colors"
+                >
+                  <Ban size={14} /> Cancel Order
+                </button>
+              )}
+            </>
           )}
         </div>
       </div>
