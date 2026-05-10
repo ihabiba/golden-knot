@@ -218,50 +218,49 @@ function OrdersSection() {
         </div>
       ) : (
         <div className="space-y-3">
-          {filtered.map((order) => (
-            <div key={order.id} className="bg-white rounded-2xl border border-gray-100 p-5 hover:shadow-sm transition-shadow">
-              <div className="flex items-start justify-between gap-3 mb-3">
-                <div>
-                  <p className="text-sm font-semibold text-[#1C1C1C]">Order #{order.id}</p>
-                  <p className="text-sm text-gray-700 mt-0.5 line-clamp-1">
-                    {order.items.map((i) => i.product_name).slice(0, 2).join(' & ')}
-                    {order.items.length > 2 ? ` +${order.items.length - 2} more` : ''}
-                  </p>
-                  <p className="text-xs text-gray-400 mt-0.5">
-                    {new Date(order.created_at).toLocaleDateString('en-GB', {
-                      day: 'numeric', month: 'short', year: 'numeric',
-                    })}
-                  </p>
+          {filtered.map((order) => {
+            const primaryItem = order.items[0];
+            const sellers = [...new Set(order.items.map((i) => i.seller_name))].join(', ');
+            return (
+              <Link
+                key={order.id}
+                to={`/orders/${order.id}`}
+                className="flex items-start gap-4 bg-white rounded-2xl border border-gray-100 p-5 hover:shadow-sm hover:border-gray-200 transition-all group"
+              >
+                {/* Thumbnail */}
+                <div className="w-14 h-14 rounded-xl overflow-hidden shrink-0 bg-gray-100">
+                  {primaryItem?.product_image ? (
+                    <img src={primaryItem.product_image} alt={primaryItem.product_name} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full bg-[#C9A84C]/10" />
+                  )}
                 </div>
-                <StatusBadge status={order.status} showDot />
-              </div>
 
-              <div className="flex flex-wrap gap-1.5 mb-3">
-                {order.items.slice(0, 3).map((item) => (
-                  <span key={item.id} className="text-xs text-gray-600 bg-gray-50 rounded-lg px-2 py-1">
-                    {item.product_name} ×{item.quantity}
-                  </span>
-                ))}
-                {order.items.length > 3 && (
-                  <span className="text-xs text-gray-400 bg-gray-50 rounded-lg px-2 py-1">
-                    +{order.items.length - 3} more
-                  </span>
-                )}
-              </div>
-
-              <div className="flex items-center justify-between pt-2 border-t border-gray-50">
-                <p className="font-semibold text-sm text-[#1C1C1C]">
-                  ${parseFloat(order.total_price).toFixed(2)}
-                </p>
-                <Link
-                  to={`/orders/${order.id}`}
-                  className="flex items-center gap-1 text-xs text-[#C9A84C] hover:text-[#D4B96A] font-medium transition-colors"
-                >
-                  View Details <ChevronRight size={12} />
-                </Link>
-              </div>
-            </div>
-          ))}
+                {/* Info */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="font-display font-bold text-[#1C1C1C] leading-snug line-clamp-2 flex-1">
+                      {order.items.map((i) => i.product_name).slice(0, 2).join(' & ')}
+                      {order.items.length > 2 ? ` +${order.items.length - 2} more` : ''}
+                    </p>
+                    <StatusBadge status={order.status} showDot size="sm" />
+                  </div>
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    {sellers} · {new Date(order.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                  </p>
+                  <div className="flex items-center justify-between mt-3 pt-2 border-t border-gray-50">
+                    <p className="font-semibold text-sm text-[#1C1C1C]">${parseFloat(order.total_price).toFixed(2)}</p>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[11px] text-gray-300">ref #{order.id}</span>
+                      <span className="flex items-center gap-1 text-xs text-[#C9A84C] font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+                        View Details <ChevronRight size={11} />
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </Link>
+            );
+          })}
         </div>
       )}
     </div>

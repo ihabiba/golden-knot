@@ -113,70 +113,62 @@ export default function OrdersPage() {
           </div>
         ) : (
           <div className="space-y-3">
-            {filtered.map((order) => (
-              <Link
-                key={order.id}
-                to={`/orders/${order.id}`}
-                className="block bg-white rounded-2xl border border-gray-100 p-5 hover:shadow-md hover:border-gray-200 transition-all group"
-              >
-                {/* Order header */}
-                <div className="flex items-start justify-between gap-3 mb-4">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <p className="font-semibold text-sm text-[#1C1C1C]">Order #{order.id}</p>
-                      <StatusBadge status={order.status} showDot size="sm" />
+            {filtered.map((order) => {
+              const palette = PALETTES[order.items[0]?.product % PALETTES.length];
+              const primaryItem = order.items[0];
+              const sellers = [...new Set(order.items.map((i) => i.seller_name))].join(', ');
+              return (
+                <Link
+                  key={order.id}
+                  to={`/orders/${order.id}`}
+                  className="block bg-white rounded-2xl border border-gray-100 p-5 hover:shadow-md hover:border-gray-200 transition-all group"
+                >
+                  <div className="flex items-start gap-4">
+                    {/* Primary item thumbnail */}
+                    <div className="w-14 h-14 rounded-xl overflow-hidden shrink-0">
+                      {primaryItem?.product_image ? (
+                        <img src={primaryItem.product_image} alt={primaryItem.product_name} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full" style={{ background: `linear-gradient(135deg, ${palette?.[0]} 0%, ${palette?.[1]} 55%, ${palette?.[2]} 100%)` }} />
+                      )}
                     </div>
-                    <p className="text-sm text-gray-700 mt-0.5 line-clamp-1">{itemSummary(order.items)}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">
-                      {new Date(order.created_at).toLocaleDateString('en-GB', {
-                        day: 'numeric', month: 'long', year: 'numeric',
-                      })}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-1 text-xs text-[#C9A84C] font-medium opacity-0 group-hover:opacity-100 transition-opacity">
-                    View <ChevronRight size={12} />
-                  </div>
-                </div>
 
-                {/* Items preview */}
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="flex -space-x-2">
-                    {order.items.slice(0, 4).map((item, i) => {
-                      const palette = PALETTES[item.product % PALETTES.length];
-                      return (
-                        <div
-                          key={item.id}
-                          className="w-9 h-9 rounded-lg border-2 border-white"
-                          style={{
-                            background: `linear-gradient(135deg, ${palette[0]} 0%, ${palette[1]} 55%, ${palette[2]} 100%)`,
-                            zIndex: 4 - i,
-                          }}
-                        />
-                      );
-                    })}
-                    {order.items.length > 4 && (
-                      <div className="w-9 h-9 rounded-lg bg-gray-100 border-2 border-white flex items-center justify-center text-xs text-gray-500 font-medium z-0">
-                        +{order.items.length - 4}
+                    {/* Main info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-display font-bold text-[#1C1C1C] leading-snug line-clamp-2">
+                            {itemSummary(order.items)}
+                          </p>
+                          <p className="text-xs text-gray-400 mt-0.5">
+                            {sellers} · {new Date(order.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                          </p>
+                        </div>
+                        <StatusBadge status={order.status} showDot size="sm" />
                       </div>
-                    )}
-                  </div>
-                  <p className="text-xs text-gray-500">
-                    {order.items.length} {order.items.length === 1 ? 'item' : 'items'}
-                  </p>
-                </div>
 
-                {/* Footer */}
-                <div className="flex items-center justify-between pt-3 border-t border-gray-50">
-                  <p className="font-display font-bold text-[#1C1C1C]">
-                    ${parseFloat(order.total_price).toFixed(2)}
-                  </p>
-                  {parseFloat(order.discount_amount) > 0 && (
-                    <p className="text-xs text-green-600">
-                      Saved ${parseFloat(order.discount_amount).toFixed(2)}
-                    </p>
-                  )}
-                </div>
-              </Link>
+                      {/* Footer row */}
+                      <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-50">
+                        <p className="font-display font-bold text-[#1C1C1C]">
+                          ${parseFloat(order.total_price).toFixed(2)}
+                          {parseFloat(order.discount_amount) > 0 && (
+                            <span className="ml-2 text-xs text-green-600 font-normal">
+                              −${parseFloat(order.discount_amount).toFixed(2)}
+                            </span>
+                          )}
+                        </p>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[11px] text-gray-300">ref #{order.id}</span>
+                          <span className="text-xs text-[#C9A84C] font-medium opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0.5">
+                            View <ChevronRight size={11} />
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
             ))}
           </div>
         )}

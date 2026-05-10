@@ -135,17 +135,22 @@ export default function OrderDetailPage() {
             <ArrowLeft size={18} />
           </button>
           <div>
-            <h1 className="font-display text-xl font-bold text-[#1C1C1C]">Order #{order.id}</h1>
-            <p className="text-sm text-gray-700 mt-0.5 line-clamp-1">{itemSummary(order.items)}</p>
-            {isSellerFulfillmentView && (
-              <p className="text-xs text-[#C9A84C] font-medium mt-0.5">
+            <h1 className="font-display text-xl font-bold text-[#1C1C1C] leading-snug">
+              {itemSummary(order.items)}
+            </h1>
+            {isSellerFulfillmentView ? (
+              <p className="text-xs text-[#C9A84C] font-medium mt-1">
                 from {order.customer_username} · {order.shipping_address.city}, {order.shipping_address.country}
+              </p>
+            ) : (
+              <p className="text-xs text-gray-400 mt-1">
+                by {[...new Set(order.items.map((i) => i.seller_name))].join(', ')}
               </p>
             )}
             <p className="text-xs text-gray-400 mt-0.5">
-              Placed on {new Date(order.created_at).toLocaleDateString('en-GB', {
+              {new Date(order.created_at).toLocaleDateString('en-GB', {
                 day: 'numeric', month: 'long', year: 'numeric',
-              })}
+              })} · <span className="text-gray-300">ref #{order.id}</span>
             </p>
           </div>
           <div className="ml-auto">
