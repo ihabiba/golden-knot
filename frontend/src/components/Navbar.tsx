@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
-import { getNotifications, markAllRead } from '../api/notifications';
+import { getNotifications, markAllRead, markOneRead } from '../api/notifications';
 import { mediaUrl } from '../utils/mediaUrl';
 import type { Notification } from '../types';
 
@@ -111,6 +111,27 @@ export default function Navbar() {
     if (type === 'payout') return '💰';
     if (type === 'announcement') return '📢';
     return '🔔';
+  };
+
+  const getNotifLink = (n: Notification): string | null => {
+    if (n.notif_type === 'order' && n.data.order_id) return `/orders/${n.data.order_id}`;
+    if (n.notif_type === 'payout') return '/seller/dashboard';
+    if (n.notif_type === 'announcement' || n.notif_type === 'system') return null;
+    return null;
+  };
+
+  const handleNotifClick = async (n: Notification) => {
+    // Mark as read if unread
+    if (!n.is_read) {
+      setNotifications((prev) => prev.map((x) => x.id === n.id ? { ...x, is_read: true } : x));
+      setUnreadCount((c) => Math.max(0, c - 1));
+      markOneRead(n.id).catch(() => {}); // fire-and-forget
+    }
+    const link = getNotifLink(n);
+    if (link) {
+      setNotifOpen(false);
+      navigate(link);
+    }
   };
 
   useEffect(() => {
@@ -280,24 +301,37 @@ export default function Navbar() {
                           <p className="text-xs text-gray-400">No notifications yet</p>
                         </div>
                       ) : (
-                        notifications.slice(0, 15).map((n) => (
-                          <div
-                            key={n.id}
-                            className={`flex items-start gap-3 px-4 py-3 border-b border-gray-50 last:border-0 transition-colors ${n.is_read ? '' : 'bg-[#C9A84C]/5'}`}
-                          >
-                            <span className="text-base leading-none mt-0.5 shrink-0">{notifIcon(n.notif_type)}</span>
-                            <div className="flex-1 min-w-0">
-                              <p className={`text-xs font-semibold ${n.is_read ? 'text-gray-600' : 'text-[#1C1C1C]'}`}>{n.title}</p>
-                              <p className="text-[11px] text-gray-400 mt-0.5 line-clamp-2">{n.body}</p>
-                              <p className="text-[10px] text-gray-300 mt-1">
-                                {new Date(n.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
-                              </p>
-                            </div>
-                            {!n.is_read && (
-                              <span className="w-2 h-2 rounded-full bg-[#C9A84C] shrink-0 mt-1" />
-                            )}
-                          </div>
-                        ))
+                        notifications.slice(0, 15).map((n) => {
+                          const link = getNotifLink(n);
+                          return (
+                            <button
+                              key={n.id}
+                              onClick={() => handleNotifClick(n)}
+                              className={`w-full text-left flex items-start gap-3 px-4 py-3 border-b border-gray-50 last:border-0 transition-colors ${
+                                n.is_read ? 'hover:bg-gray-50' : 'bg-[#C9A84C]/5 hover:bg-[#C9A84C]/10'
+                              } ${link ? 'cursor-pointer' : 'cursor-default'}`}
+                            >
+                              <span className="text-base leading-none mt-0.5 shrink-0">{notifIcon(n.notif_type)}</span>
+                              <div className="flex-1 min-w-0">
+                                <p className={`text-xs font-semibold ${n.is_read ? 'text-gray-600' : 'text-[#1C1C1C]'}`}>
+                                  {n.title}
+                                </p>
+                                <p className="text-[11px] text-gray-400 mt-0.5 line-clamp-2">{n.body}</p>
+                                <div className="flex items-center gap-2 mt-1">
+                                  <p className="text-[10px] text-gray-300">
+                                    {new Date(n.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                                  </p>
+                                  {link && (
+                                    <span className="text-[10px] text-[#C9A84C] font-medium">View →</span>
+                                  )}
+                                </div>
+                              </div>
+                              {!n.is_read && (
+                                <span className="w-2 h-2 rounded-full bg-[#C9A84C] shrink-0 mt-1" />
+                              )}
+                            </button>
+                          );
+                        })
                       )}
                     </div>
                   </div>
