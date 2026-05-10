@@ -17,3 +17,6 @@ export const refreshToken = (refresh: string) =>
 
 export const fetchCurrentUser = () =>
   api.get<User>('/users/me/');
+
+export const googleLogin = (access_token: string) =>
+  api.post<AuthTokens>('/auth/google/', { access_token });

@@ -22,10 +22,15 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "django.contrib.sites",          # required by allauth
     # Third-party
     "rest_framework",
     "rest_framework_simplejwt",
     "corsheaders",
+    "allauth",
+    "allauth.account",
+    "allauth.socialaccount",
+    "allauth.socialaccount.providers.google",
     # Local
     "core",
     "users",
@@ -56,6 +61,7 @@ MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",          # must be first
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",     # static file serving
+    "allauth.account.middleware.AccountMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -114,6 +120,36 @@ WHITENOISE_USE_FINDERS = True
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 AUTH_USER_MODEL = "users.User"
+
+SITE_ID = 1
+
+# ── Google OAuth ──────────────────────────────────────────────────────────────
+GOOGLE_CLIENT_ID     = config("GOOGLE_CLIENT_ID",     default="")
+GOOGLE_CLIENT_SECRET = config("GOOGLE_CLIENT_SECRET", default="")
+
+SOCIALACCOUNT_PROVIDERS = {
+    "google": {
+        "SCOPE": ["profile", "email"],
+        "AUTH_PARAMS": {"access_type": "online"},
+        "APP": {
+            "client_id": GOOGLE_CLIENT_ID,
+            "secret":    GOOGLE_CLIENT_SECRET,
+            "key":       "",
+        },
+    }
+}
+SOCIALACCOUNT_AUTO_SIGNUP       = True
+SOCIALACCOUNT_EMAIL_VERIFICATION = "none"
+
+# allauth account settings (email is the primary identifier in our project)
+ACCOUNT_AUTHENTICATION_METHOD  = "email"
+ACCOUNT_EMAIL_REQUIRED          = True
+ACCOUNT_USERNAME_REQUIRED       = True
+ACCOUNT_USER_MODEL_USERNAME_FIELD = "username"
+AUTHENTICATION_BACKENDS = [
+    "django.contrib.auth.backends.ModelBackend",
+    "allauth.account.auth_backends.AuthenticationBackend",
+]
 
 # ── CORS ─────────────────────────────────────────────────────────────────────
 CORS_ALLOWED_ORIGINS = config(

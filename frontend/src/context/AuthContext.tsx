@@ -6,6 +6,7 @@ interface AuthContextValue {
   user: User | null;
   accessToken: string | null;
   login: (email: string, password: string, rememberMe?: boolean) => Promise<void>;
+  loginWithTokens: (access: string, refresh: string) => Promise<void>;
   logout: () => void;
   refreshUser: () => Promise<void>;
   isAuthenticated: boolean;
@@ -50,6 +51,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const loginWithTokens = useCallback(async (access: string, refresh: string) => {
+    localStorage.setItem('access_token', access);
+    localStorage.setItem('refresh_token', refresh);
+    setAccessToken(access);
+    try {
+      const { data } = await fetchCurrentUser();
+      setUser(data);
+    } catch {
+      setUser(null);
+    }
+  }, []);
+
   const logout = () => {
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
@@ -65,6 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user,
         accessToken,
         login,
+        loginWithTokens,
         logout,
         refreshUser: loadUser,
         isAuthenticated: !!accessToken,
