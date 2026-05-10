@@ -166,7 +166,7 @@ function OrdersSection() {
   const [activeStatus, setActiveStatus] = useState<string>('all');
 
   useEffect(() => {
-    const params = user?.role === 'seller' ? { as_customer: 'true' } : {};
+    const params: Record<string, string | number> = user?.role === 'seller' ? { as_customer: 'true' } : {};
     getOrders(params)
       .then(({ data }) => setOrders(data.results))
       .catch(() => toast.error('Failed to load orders.'))
@@ -488,14 +488,14 @@ function AddressModal({
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl leading-none">&times;</button>
         </div>
         <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-[70vh] overflow-y-auto">
-          {([
+          {(([
             { key: 'full_name', label: 'Full Name', span: true, placeholder: 'Ahmad Karimi' },
             { key: 'address_line1', label: 'Address Line 1', span: true, placeholder: '123 Street' },
             { key: 'address_line2', label: 'Address Line 2 (optional)', span: true, placeholder: 'Apt, Suite…' },
             { key: 'city', label: 'City', placeholder: 'Kabul' },
             { key: 'postal_code', label: 'Postal Code', placeholder: '00000' },
             { key: 'phone', label: 'Phone', placeholder: '+93 70 000 0000' },
-          ] as const).map(({ key, label, span, placeholder }) => (
+          ]) as Array<{ key: keyof typeof form; label: string; span?: boolean; placeholder: string }>).map(({ key, label, span, placeholder }) => (
             <div key={key} className={span ? 'sm:col-span-2' : ''}>
               <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">{label}</label>
               <input
@@ -712,7 +712,7 @@ function AddressesSection() {
 // ─── Settings Section ────────────────────────────────────────────────────────
 
 function SettingsSection() {
-  const { user, logout, refreshUser } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [pwForm, setPwForm] = useState({ old_password: '', password: '', confirm: '' });
   const [showOld, setShowOld] = useState(false);

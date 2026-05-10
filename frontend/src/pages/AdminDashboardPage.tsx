@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 import {
   LayoutDashboard, Users, Store, Package, ShoppingBag, Tag,
   CheckCircle2, XCircle, ChevronDown, Loader2, Plus, Pencil, Trash2, X,
-  TrendingUp, DollarSign,
+  DollarSign,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { getUsers, deactivateUser, activateUser } from '../api/users';
@@ -529,7 +529,7 @@ function AdminOrdersSection() {
   const handleStatusUpdate = async (orderId: number, status: string) => {
     setUpdatingId(orderId);
     try {
-      await updateOrderStatus(orderId, status);
+      await updateOrderStatus(orderId, { status });
       setOrders((prev) => prev.map((o) => o.id === orderId ? { ...o, status: status as Order['status'] } : o));
       toast.success('Order status updated.');
     } catch (err) {

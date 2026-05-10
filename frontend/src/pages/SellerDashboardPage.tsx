@@ -206,14 +206,14 @@ function ProductModal({
     if (!form.price || parseFloat(form.price) <= 0) { setErrors({ price: 'Enter a valid price.' }); return; }
     setLoading(true);
     try {
-      const payload = {
+      const payload: Record<string, string | number | boolean> = {
         name: form.name,
         description: form.description,
-        category: form.category ? parseInt(form.category) : undefined,
         price: form.price,
         stock: parseInt(form.stock) || 0,
         location: form.location,
         is_active: form.is_active,
+        ...(form.category ? { category: parseInt(form.category) } : {}),
       };
 
       let slug: string;

@@ -281,7 +281,7 @@ export default function CheckoutPage() {
     ];
     const errors: Partial<Record<keyof ShippingAddress, string>> = {};
     required.forEach((k) => {
-      if (!address[k].trim()) errors[k] = 'This field is required.';
+      if (!(address[k] ?? '').trim()) errors[k] = 'This field is required.';
     });
     // Phone must contain at least 7 digits
     if (address.phone.trim()) {

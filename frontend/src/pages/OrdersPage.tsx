@@ -42,7 +42,7 @@ export default function OrdersPage() {
   useEffect(() => {
     if (!isAuthenticated) { navigate('/login', { replace: true }); return; }
     // Sellers using "My Orders" always see orders they placed as buyers
-    const params = user?.role === 'seller' ? { as_customer: 'true' } : {};
+    const params: Record<string, string | number> = user?.role === 'seller' ? { as_customer: 'true' } : {};
     getOrders(params)
       .then(({ data }) => setOrders(data.results))
       .catch(() => toast.error('Failed to load orders.'))
