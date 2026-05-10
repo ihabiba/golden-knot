@@ -169,7 +169,6 @@ export default function OrdersPage() {
                 </Link>
               );
             })}
-            ))}
           </div>
         )}
       </div>
