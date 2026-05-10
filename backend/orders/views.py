@@ -8,6 +8,29 @@ from .models import Order, OrderItem
 from .serializers import OrderSerializer
 
 
+def _item_summary(items):
+    """Return a human-readable summary of a list of order items."""
+    names = [i.product.name for i in items]
+    if len(names) == 0:
+        return "your items"
+    if len(names) == 1:
+        return names[0]
+    if len(names) == 2:
+        return f"{names[0]} & {names[1]}"
+    return f"{names[0]} +{len(names) - 1} more"
+
+
+def _notify(recipient, notif_type, title, body, data=None):
+    from notifications.models import Notification
+    Notification.objects.create(
+        recipient=recipient,
+        notif_type=notif_type,
+        title=title,
+        body=body,
+        data=data or {},
+    )
+
+
 class OrderViewSet(viewsets.ModelViewSet):
     serializer_class = OrderSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -19,7 +42,6 @@ class OrderViewSet(viewsets.ModelViewSet):
         if user.role == "admin":
             qs = qs.select_related("customer")
         elif user.role == "seller":
-            # as_customer=true → show orders the seller placed as a buyer
             if self.request.query_params.get("as_customer") == "true":
                 qs = qs.filter(customer=user)
             else:
@@ -35,6 +57,70 @@ class OrderViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(customer=self.request.user)
+
+    def update(self, request, *args, **kwargs):
+        """Send status-change notifications whenever an order status is updated."""
+        old_status = self.get_object().status
+        response = super().update(request, *args, **kwargs)
+        new_status = response.data.get("status")
+
+        if new_status and new_status != old_status:
+            order = self.get_object()
+            all_items = list(order.items.select_related("product", "seller").all())
+            summary = _item_summary(all_items)
+
+            if new_status == "confirmed":
+                _notify(
+                    order.customer, "order",
+                    f"Order confirmed — {summary}",
+                    f"Order #{order.id} · ${order.total_price} · Your order has been confirmed and will be processed soon.",
+                    {"order_id": order.id},
+                )
+
+            elif new_status == "processing":
+                _notify(
+                    order.customer, "order",
+                    f"Your order is being prepared",
+                    f"Order #{order.id} · {summary} · Your seller is getting your item(s) ready.",
+                    {"order_id": order.id},
+                )
+
+            elif new_status == "shipped":
+                tracking = order.tracking_number
+                carrier = order.shipping_carrier
+                tracking_info = f" via {carrier} · {tracking}" if tracking else ""
+                _notify(
+                    order.customer, "order",
+                    f"Your order has shipped! 📦",
+                    f"Order #{order.id} · {summary}{tracking_info} · Check your order for tracking details.",
+                    {"order_id": order.id},
+                )
+
+            elif new_status == "delivered":
+                _notify(
+                    order.customer, "order",
+                    f"Order delivered — enjoy your purchase! ✅",
+                    f"Order #{order.id} · {summary} · We hope you love it. Leave a review to help other buyers.",
+                    {"order_id": order.id},
+                )
+
+            elif new_status == "cancelled":
+                _notify(
+                    order.customer, "order",
+                    f"Order cancelled",
+                    f"Order #{order.id} · {summary} · Your order has been cancelled. Contact support if this was unexpected.",
+                    {"order_id": order.id},
+                )
+
+            elif new_status == "refunded":
+                _notify(
+                    order.customer, "order",
+                    f"Refund processed",
+                    f"Order #{order.id} · ${order.total_price} has been refunded. Please allow 5–10 business days.",
+                    {"order_id": order.id},
+                )
+
+        return response
 
     @action(detail=False, methods=["post"], url_path="from-cart")
     def from_cart(self, request):
@@ -108,28 +194,30 @@ class OrderViewSet(viewsets.ModelViewSet):
             "items__product", "items__seller"
         ).get(pk=order.pk)
 
-        # Notify customer
-        from notifications.models import Notification
-        Notification.objects.create(
-            recipient=request.user,
-            notif_type="order",
-            title=f"Order #{order.id} placed",
-            body=f"Your order for {order.items.count()} item(s) has been placed and is being processed.",
-            data={"order_id": order.id},
+        all_items = list(order.items.all())
+        summary = _item_summary(all_items)
+
+        # Notify customer — product name + total in title
+        _notify(
+            request.user, "order",
+            f"Order confirmed — {summary}",
+            f"Order #{order.id} · ${order.total_price} · Cash on delivery. We'll notify you when it ships.",
+            {"order_id": order.id},
         )
 
-        # Notify each unique seller
+        # Notify each unique seller — buyer name + product name
         seen_sellers = set()
         for item in order.items.all():
             if item.seller_id not in seen_sellers:
                 seen_sellers.add(item.seller_id)
                 seller_items = [i for i in order.items.all() if i.seller_id == item.seller_id]
-                Notification.objects.create(
-                    recipient=item.seller,
-                    notif_type="order",
-                    title=f"New order — #{order.id}",
-                    body=f"You have {len(seller_items)} new item(s) in Order #{order.id} from {request.user.username}.",
-                    data={"order_id": order.id},
+                seller_summary = _item_summary(seller_items)
+                seller_total = sum(i.quantity * i.unit_price for i in seller_items)
+                _notify(
+                    item.seller, "order",
+                    f"New order from {request.user.username}",
+                    f"Order #{order.id} · {seller_summary} · ${seller_total:.2f} · Please process and ship.",
+                    {"order_id": order.id},
                 )
 
         serializer = OrderSerializer(order, context={"request": request})
