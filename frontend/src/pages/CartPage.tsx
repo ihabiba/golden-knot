@@ -22,13 +22,12 @@ const PALETTES = [
   ['#C9A84C', '#1C1C1C', '#8B2525'],
 ] as const;
 
-// ─── Skeleton ─────────────────────────────────────────────────────────────────
-
 function CartSkeleton() {
   return (
     <div className="animate-pulse space-y-4">
       {[1, 2, 3].map((i) => (
         <div key={i} className="bg-white rounded-xl p-5 flex gap-4 border border-gray-100">
+          <div className="w-5 h-5 bg-gray-200 rounded mt-1" />
           <div className="w-20 h-20 rounded-lg bg-gray-200 shrink-0" />
           <div className="flex-1 space-y-2.5">
             <div className="h-3 bg-gray-200 rounded w-1/4" />
@@ -45,17 +44,13 @@ function CartSkeleton() {
   );
 }
 
-// ─── Empty state ──────────────────────────────────────────────────────────────
-
 function EmptyCart() {
   return (
     <div className="flex flex-col items-center justify-center py-24 text-center">
       <div className="w-24 h-24 rounded-full bg-gray-100 flex items-center justify-center mb-6">
         <ShoppingBag size={36} className="text-gray-300" />
       </div>
-      <h2 className="font-display text-2xl font-bold text-[#1C1C1C] mb-2">
-        Your cart is empty
-      </h2>
+      <h2 className="font-display text-2xl font-bold text-[#1C1C1C] mb-2">Your cart is empty</h2>
       <p className="text-gray-500 text-sm mb-8 max-w-xs">
         Looks like you haven't added anything yet. Explore our collection of handcrafted textiles.
       </p>
@@ -70,10 +65,8 @@ function EmptyCart() {
   );
 }
 
-// ─── Main page ────────────────────────────────────────────────────────────────
-
 export default function CartPage() {
-  const navigate  = useNavigate();
+  const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
   const { setItemCount } = useCart();
 
@@ -81,35 +74,69 @@ export default function CartPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState('');
 
-  // Per-item loading state
+  // Selection
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+
+  // Per-item loading
   const [updatingId, setUpdatingId] = useState<number | null>(null);
   const [removingId, setRemovingId] = useState<number | null>(null);
 
   // Promo code
-  const [promoInput, setPromoInput]       = useState('');
-  const [appliedPromo, setAppliedPromo]   = useState<PromoValidation | null>(null);
-  const [promoError, setPromoError]       = useState('');
-  const [promoLoading, setPromoLoading]   = useState(false);
+  const [promoInput, setPromoInput]     = useState('');
+  const [appliedPromo, setAppliedPromo] = useState<PromoValidation | null>(null);
+  const [promoError, setPromoError]     = useState('');
+  const [promoLoading, setPromoLoading] = useState(false);
 
-  // Checkout loading
   const [checkoutLoading, setCheckoutLoading] = useState(false);
 
   const syncCart = useCallback((updatedCart: Cart) => {
     setCart(updatedCart);
     setItemCount(updatedCart.item_count);
+    // Keep selection in sync — remove any IDs that no longer exist
+    setSelectedIds((prev) => {
+      const validIds = new Set(updatedCart.items.map((i) => i.id));
+      return new Set([...prev].filter((id) => validIds.has(id)));
+    });
   }, [setItemCount]);
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      navigate('/login');
-      return;
-    }
+    if (!isAuthenticated) { navigate('/login'); return; }
     setLoading(true);
     getCart()
-      .then((res) => syncCart(res.data))
+      .then((res) => {
+        syncCart(res.data);
+        // Select all items by default on first load
+        setSelectedIds(new Set(res.data.items.map((i) => i.id)));
+      })
       .catch((err) => setError(parseApiError(err)))
       .finally(() => setLoading(false));
   }, [isAuthenticated, navigate, syncCart]);
+
+  // ── Selection helpers ────────────────────────────────────────────────────────
+
+  const allSelected  = cart ? cart.items.length > 0 && selectedIds.size === cart.items.length : false;
+  const noneSelected = selectedIds.size === 0;
+  const someSelected = !allSelected && !noneSelected;
+
+  const toggleSelectAll = () => {
+    if (!cart) return;
+    if (allSelected) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(cart.items.map((i) => i.id)));
+    }
+  };
+
+  const toggleItem = (id: number) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  // ── Cart actions ─────────────────────────────────────────────────────────────
 
   const handleQtyChange = async (itemId: number, newQty: number) => {
     if (!cart || updatingId === itemId) return;
@@ -117,15 +144,15 @@ export default function CartPage() {
     try {
       const res = await updateCartItem(itemId, newQty);
       syncCart(res.data);
-      // If promo was applied, re-check it against new subtotal
       if (appliedPromo) {
-        const newSubtotal = res.data.total;
+        const newSelected = res.data.items.filter((i) => selectedIds.has(i.id));
+        const newSubtotal = newSelected.reduce((s, i) => s + parseFloat(i.subtotal), 0).toFixed(2);
         const check = await validatePromoCode(appliedPromo.code, newSubtotal).catch(() => null);
         if (!check) setAppliedPromo(null);
         else setAppliedPromo(check.data);
       }
     } catch {
-      // Optimistic failure — cart state unchanged
+      // silent fail
     } finally {
       setUpdatingId(null);
     }
@@ -149,7 +176,7 @@ export default function CartPage() {
     setPromoError('');
     setPromoLoading(true);
     try {
-      const res = await validatePromoCode(promoInput.trim(), cart.total);
+      const res = await validatePromoCode(promoInput.trim(), selectedSubtotal.toFixed(2));
       setAppliedPromo(res.data);
       setPromoInput('');
     } catch (err) {
@@ -165,27 +192,28 @@ export default function CartPage() {
   };
 
   const handleProceedToCheckout = () => {
-    if (!cart || cart.items.length === 0) return;
+    if (!cart || noneSelected) return;
     setCheckoutLoading(true);
     navigate('/checkout', {
       state: {
         appliedPromo,
         discountAmount: appliedPromo?.discount_amount ?? '0.00',
+        selectedItemIds: [...selectedIds],
       },
     });
   };
 
-  // ── Derived values ──────────────────────────────────────────────────────────
-  const subtotal       = parseFloat(cart?.total ?? '0');
-  const discount       = parseFloat(appliedPromo?.discount_amount ?? '0');
-  const shipping       = 0;
-  const orderTotal     = Math.max(subtotal - discount + shipping, 0);
-  const itemCount      = cart?.items.length ?? 0;
+  // ── Derived values ───────────────────────────────────────────────────────────
+
+  const selectedItems   = cart?.items.filter((i) => selectedIds.has(i.id)) ?? [];
+  const selectedSubtotal = selectedItems.reduce((s, i) => s + parseFloat(i.subtotal), 0);
+  const discount         = parseFloat(appliedPromo?.discount_amount ?? '0');
+  const orderTotal       = Math.max(selectedSubtotal - discount, 0);
 
   return (
     <div className="min-h-screen bg-[#FAFAF8]">
 
-      {/* ── Header ──────────────────────────────────────────────────────────── */}
+      {/* Header */}
       <div className="bg-[#0A0A0A] py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <nav className="text-xs text-gray-500 mb-3 flex items-center gap-2">
@@ -221,17 +249,83 @@ export default function CartPage() {
 
             {/* ── Cart items ──────────────────────────────────────────────── */}
             <div>
-              <div className="space-y-4">
+
+              {/* Select all row */}
+              <div className="flex items-center gap-3 mb-3 px-1">
+                <button
+                  type="button"
+                  onClick={toggleSelectAll}
+                  className="flex items-center gap-2.5 group"
+                  aria-label="Select all items"
+                >
+                  <span
+                    className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
+                      allSelected
+                        ? 'bg-[#C9A84C] border-[#C9A84C]'
+                        : someSelected
+                        ? 'bg-[#C9A84C]/30 border-[#C9A84C]'
+                        : 'border-gray-300 group-hover:border-[#C9A84C]'
+                    }`}
+                  >
+                    {(allSelected || someSelected) && (
+                      <svg className="w-3 h-3 text-black" viewBox="0 0 12 12" fill="none">
+                        {allSelected
+                          ? <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                          : <path d="M2.5 6h7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                        }
+                      </svg>
+                    )}
+                  </span>
+                  <span className="text-sm text-gray-600 group-hover:text-[#1C1C1C] transition-colors select-none">
+                    {allSelected ? 'Deselect all' : 'Select all'}
+                    {' '}
+                    <span className="text-gray-400">({cart.items.length} items)</span>
+                  </span>
+                </button>
+
+                {!allSelected && !noneSelected && (
+                  <span className="text-xs text-[#C9A84C] ml-auto">
+                    {selectedIds.size} of {cart.items.length} selected
+                  </span>
+                )}
+              </div>
+
+              <div className="space-y-3">
                 {cart.items.map((item) => {
-                  const palette = PALETTES[item.product % PALETTES.length];
+                  const palette    = PALETTES[item.product % PALETTES.length];
                   const isUpdating = updatingId === item.id;
                   const isRemoving = removingId === item.id;
+                  const isSelected = selectedIds.has(item.id);
 
                   return (
                     <div
                       key={item.id}
-                      className={`bg-white rounded-xl border border-gray-100 p-4 sm:p-5 flex gap-4 transition-opacity duration-200 ${isRemoving ? 'opacity-40' : ''}`}
+                      className={`bg-white rounded-xl border p-4 sm:p-5 flex gap-4 transition-all duration-200 ${
+                        isRemoving ? 'opacity-40' : ''
+                      } ${isSelected ? 'border-gray-100' : 'border-gray-100 opacity-60'}`}
                     >
+                      {/* Checkbox */}
+                      <button
+                        type="button"
+                        onClick={() => toggleItem(item.id)}
+                        className="mt-1 shrink-0"
+                        aria-label={isSelected ? 'Deselect item' : 'Select item'}
+                      >
+                        <span
+                          className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
+                            isSelected
+                              ? 'bg-[#C9A84C] border-[#C9A84C]'
+                              : 'border-gray-300 hover:border-[#C9A84C]'
+                          }`}
+                        >
+                          {isSelected && (
+                            <svg className="w-3 h-3 text-black" viewBox="0 0 12 12" fill="none">
+                              <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                          )}
+                        </span>
+                      </button>
+
                       {/* Image */}
                       <Link
                         to={`/products/${item.product_slug}`}
@@ -246,9 +340,7 @@ export default function CartPage() {
                         ) : (
                           <div
                             className="w-full h-full"
-                            style={{
-                              background: `linear-gradient(135deg, ${palette[0]} 0%, ${palette[1]} 45%, ${palette[2]} 100%)`,
-                            }}
+                            style={{ background: `linear-gradient(135deg, ${palette[0]} 0%, ${palette[1]} 45%, ${palette[2]} 100%)` }}
                           />
                         )}
                       </Link>
@@ -295,7 +387,7 @@ export default function CartPage() {
                           onIncrease={() => handleQtyChange(item.id, item.quantity + 1)}
                         />
                         <div className="text-right min-w-[80px]">
-                          <p className="font-semibold text-[#C9A84C]">
+                          <p className={`font-semibold ${isSelected ? 'text-[#C9A84C]' : 'text-gray-400'}`}>
                             ${parseFloat(item.subtotal).toLocaleString()}
                           </p>
                           <button
@@ -313,7 +405,6 @@ export default function CartPage() {
                 })}
               </div>
 
-              {/* Continue shopping link */}
               <Link
                 to="/products"
                 className="inline-flex items-center gap-2 mt-6 text-sm text-gray-500 hover:text-[#C9A84C] transition-colors"
@@ -326,15 +417,24 @@ export default function CartPage() {
             {/* ── Order summary (sticky) ───────────────────────────────────── */}
             <div>
               <div className="bg-white rounded-xl border border-gray-100 p-6 sticky top-24">
-                <h2 className="font-display text-lg font-bold text-[#1C1C1C] mb-5">
-                  Order Summary
-                </h2>
+                <h2 className="font-display text-lg font-bold text-[#1C1C1C] mb-1">Order Summary</h2>
+                {!allSelected && !noneSelected && (
+                  <p className="text-xs text-[#C9A84C] mb-4">
+                    {selectedIds.size} of {cart.items.length} items selected
+                  </p>
+                )}
+                {allSelected && <div className="mb-4" />}
 
                 {/* Line items */}
                 <div className="space-y-3 text-sm pb-4 border-b border-gray-100">
                   <div className="flex justify-between text-gray-600">
-                    <span>Subtotal ({itemCount} {itemCount === 1 ? 'item' : 'items'})</span>
-                    <span className="font-medium text-[#1C1C1C]">${subtotal.toFixed(2)}</span>
+                    <span>
+                      Subtotal{' '}
+                      <span className="text-gray-400">
+                        ({selectedItems.length} {selectedItems.length === 1 ? 'item' : 'items'})
+                      </span>
+                    </span>
+                    <span className="font-medium text-[#1C1C1C]">${selectedSubtotal.toFixed(2)}</span>
                   </div>
                   {discount > 0 && appliedPromo && (
                     <div className="flex justify-between text-green-600">
@@ -388,7 +488,7 @@ export default function CartPage() {
                         </div>
                         <button
                           onClick={handleApplyPromo}
-                          disabled={promoLoading || !promoInput.trim()}
+                          disabled={promoLoading || !promoInput.trim() || noneSelected}
                           className="px-4 py-2.5 bg-[#1C1C1C] hover:bg-black disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors shrink-0"
                         >
                           {promoLoading ? <Loader2 size={14} className="animate-spin" /> : 'Apply'}
@@ -403,19 +503,29 @@ export default function CartPage() {
                   )}
                 </div>
 
+                {/* Nothing selected warning */}
+                {noneSelected && (
+                  <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2.5 mb-4 text-center">
+                    Select at least one item to checkout
+                  </p>
+                )}
+
                 {/* Checkout button */}
                 <button
                   onClick={handleProceedToCheckout}
-                  disabled={checkoutLoading || itemCount === 0}
+                  disabled={checkoutLoading || noneSelected}
                   className="w-full flex items-center justify-center gap-2 bg-[#C9A84C] hover:bg-[#D4B96A] disabled:opacity-60 disabled:cursor-not-allowed text-black font-semibold py-3.5 rounded-xl text-sm transition-colors shadow-md hover:shadow-lg"
                 >
                   {checkoutLoading ? <Loader2 size={15} className="animate-spin" /> : <ArrowRight size={15} />}
-                  Proceed to Checkout
+                  {allSelected
+                    ? 'Checkout All Items'
+                    : noneSelected
+                    ? 'Select Items to Checkout'
+                    : `Checkout ${selectedIds.size} ${selectedIds.size === 1 ? 'Item' : 'Items'}`}
                 </button>
 
-                {/* Trust note */}
                 <p className="text-center text-[10px] text-gray-400 mt-4">
-                  🔒 Secure checkout via HesabPay
+                  🔒 Cash on delivery · Secure checkout
                 </p>
               </div>
             </div>
@@ -425,8 +535,6 @@ export default function CartPage() {
     </div>
   );
 }
-
-// ─── Quantity selector ────────────────────────────────────────────────────────
 
 interface QtySelectorProps {
   quantity: number;

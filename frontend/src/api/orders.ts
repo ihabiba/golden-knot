@@ -11,6 +11,7 @@ export const createOrderFromCart = (data: {
   shipping_address: ShippingAddress;
   promo_code?: number | null;
   discount_amount?: string;
+  item_ids?: number[];
 }) => api.post<Order>('/orders/from-cart/', data);
 
 export const updateOrderStatus = (

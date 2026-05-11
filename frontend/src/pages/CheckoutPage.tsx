@@ -41,6 +41,7 @@ type Step = 1 | 2 | 3;
 interface LocationState {
   appliedPromo?: PromoValidation | null;
   discountAmount?: string;
+  selectedItemIds?: number[];
 }
 
 // ─── Progress indicator ───────────────────────────────────────────────────────
@@ -205,6 +206,7 @@ export default function CheckoutPage() {
   const state = location.state as LocationState | null;
   const appliedPromo    = state?.appliedPromo ?? null;
   const discountAmount  = parseFloat(state?.discountAmount ?? '0');
+  const selectedItemIds = state?.selectedItemIds ?? null; // null = all items
 
   const [step, setStep]         = useState<Step>(1);
   const [cart, setCart]         = useState<Cart | null>(null);
@@ -301,8 +303,12 @@ export default function CheckoutPage() {
         shipping_address: address,
         promo_code: appliedPromo?.id ?? null,
         discount_amount: appliedPromo?.discount_amount ?? '0.00',
+        ...(selectedItemIds ? { item_ids: selectedItemIds } : {}),
       });
-      setItemCount(0);
+      // Remaining items = total items minus those just ordered
+      const orderedCount = selectedItemIds ? selectedItemIds.length : (cart?.items.length ?? 0);
+      const remaining = Math.max((cart?.item_count ?? 0) - orderedCount, 0);
+      setItemCount(remaining);
       window.dispatchEvent(new CustomEvent('goldenknotOrderPlaced'));
       navigate(`/orders/${res.data.id}/confirmation`);
     } catch (err) {
@@ -323,7 +329,11 @@ export default function CheckoutPage() {
 
   if (!cart) return null;
 
-  const subtotal = parseFloat(cart.total);
+  // Only include selected items in the price calculations
+  const checkoutItems = selectedItemIds
+    ? cart.items.filter((i) => selectedItemIds.includes(i.id))
+    : cart.items;
+  const subtotal = checkoutItems.reduce((s, i) => s + parseFloat(i.subtotal), 0);
   const total    = Math.max(subtotal - discountAmount, 0);
 
   return (
@@ -545,10 +555,10 @@ export default function CheckoutPage() {
                 {/* Cart items review */}
                 <div className="bg-white rounded-xl border border-gray-100 p-5">
                   <h3 className="font-semibold text-sm text-[#1C1C1C] mb-4">
-                    Items ({cart.item_count})
+                    Items ({checkoutItems.length})
                   </h3>
                   <div className="space-y-4">
-                    {cart.items.map((item) => {
+                    {checkoutItems.map((item) => {
                       const palette = PALETTES[item.product % PALETTES.length];
                       return (
                         <div key={item.id} className="flex items-center gap-3">
@@ -680,7 +690,7 @@ export default function CheckoutPage() {
           {/* ── Right: sticky summary ────────────────────────────────────── */}
           <div className="hidden lg:block">
             <OrderSummary
-              cart={cart}
+              cart={{ ...cart, items: checkoutItems, total: subtotal.toFixed(2) }}
               discount={discountAmount}
               promoCode={appliedPromo}
             />

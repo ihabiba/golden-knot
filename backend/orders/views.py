@@ -138,7 +138,18 @@ class OrderViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        cart_items = list(cart.items.all())
+        # Optional: only checkout specific items (selective checkout)
+        item_ids = request.data.get("item_ids")
+        if item_ids and isinstance(item_ids, list):
+            cart_items = list(cart.items.filter(id__in=item_ids))
+            if not cart_items:
+                return Response(
+                    {"detail": "None of the selected items were found in your cart."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+        else:
+            cart_items = list(cart.items.all())
+
         if not cart_items:
             return Response(
                 {"detail": "Your cart is empty."},
@@ -188,7 +199,9 @@ class OrderViewSet(viewsets.ModelViewSet):
                     uses_count=F("uses_count") + 1
                 )
 
-            CartItem.objects.filter(cart=cart).delete()
+            # Only clear the items that were included in this order
+            ordered_ids = [item.id for item in cart_items]
+            CartItem.objects.filter(cart=cart, id__in=ordered_ids).delete()
 
         order = Order.objects.prefetch_related(
             "items__product", "items__seller"
