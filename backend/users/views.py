@@ -1,4 +1,5 @@
 import json
+import threading
 import urllib.request
 import urllib.error
 
@@ -264,7 +265,9 @@ def password_reset_request(request):
         to=[user.email],
     )
     msg.attach_alternative(html_body, "text/html")
-    msg.send(fail_silently=True)
+
+    # Send in a background thread — keeps the HTTP response fast even if SMTP is slow
+    threading.Thread(target=lambda: msg.send(fail_silently=True), daemon=True).start()
 
     return Response({"detail": "If this email is registered you'll receive a reset link shortly."})
 
