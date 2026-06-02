@@ -32,7 +32,7 @@ class ProductSerializer(serializers.ModelSerializer):
             "avg_rating", "review_count",
             "created_at", "updated_at",
         ]
-        read_only_fields = ["id", "seller", "is_approved", "rejection_reason", "created_at", "updated_at"]
+        read_only_fields = ["id", "slug", "seller", "is_approved", "rejection_reason", "created_at", "updated_at"]
 
     def get_avg_rating(self, obj) -> float:
         val = getattr(obj, "avg_rating", None)
