@@ -520,6 +520,19 @@ All TypeScript interfaces in one file:
 - [x] `api/products.ts`: `rejectProduct(slug, { reason? })` accepts optional reason
 - [x] `tsc --noEmit` → 0 errors, `manage.py check` → 0 issues, migration applied cleanly
 
+### Done ✅ (seller order view + bug fixes)
+- [x] Frontend: `SellerDashboardPage` Orders — order column shows first item name + count instead of raw DB ID
+- [x] Frontend: `SellerDashboardPage` Orders — all order links now include `?mode=seller` so detail page knows the viewing intent
+- [x] Frontend: `OrderDetailPage` — `isSellerFulfillmentView` now driven by `?mode=seller` URL param (fixes the case where seller is also the buyer of the same order)
+- [x] Frontend: `OrderDetailPage` — `visibleItems` filters `order.items` to the logged-in seller's own items only when in fulfillment mode (hides other sellers' items from packing slip)
+- [x] Frontend: `OrderDetailPage` — imports `useSearchParams` from react-router-dom
+- [x] Frontend: `AdminDashboardPage` — fixed `ConfirmModal` variant `"default"` → `undefined` (Vercel build error)
+- [x] Frontend: `SellerDashboardPage` + `AdminDashboardPage` — catch block now always calls `toast.error(parseApiError(err))` even when field errors exist, so errors on non-form fields (e.g. slug) are always visible
+- [x] Frontend: `SellerDashboardPage` ProductModal — added `if (loading) return;` guard to prevent double-submit on fast clicks
+- [x] Backend: `Product.save()` — auto-generates unique slug from `slugify(name)` with numeric suffix for conflicts; no longer requires slug from client
+- [x] Backend: `ProductSerializer` — `slug` added to `read_only_fields`; DRF no longer requires it on create/update
+- [x] `manage.py check` → 0 issues, `tsc --noEmit` → 0 errors
+
 ### To Build Next
 - [ ] Backend: HesabPay payment gateway integration
 - [ ] Admin dashboard: pagination for large tables
