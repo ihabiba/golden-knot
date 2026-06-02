@@ -111,6 +111,18 @@ class OrderViewSet(viewsets.ModelViewSet):
                     f"Order #{order.id} · {summary} · Your order has been cancelled. Contact support if this was unexpected.",
                     {"order_id": order.id},
                 )
+                seen_sellers: set = set()
+                for item in all_items:
+                    if item.seller_id not in seen_sellers:
+                        seen_sellers.add(item.seller_id)
+                        seller_items = [i for i in all_items if i.seller_id == item.seller_id]
+                        seller_summary = _item_summary(seller_items)
+                        _notify(
+                            item.seller, "order",
+                            f"Order #{order.id} cancelled by customer",
+                            f"{seller_summary} — this order was cancelled by the customer. Please do not ship.",
+                            {"order_id": order.id},
+                        )
 
             elif new_status == "refunded":
                 _notify(

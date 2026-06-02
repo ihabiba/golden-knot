@@ -49,6 +49,7 @@ export interface Product {
   stock: number;
   is_active: boolean;
   is_approved: boolean;
+  rejection_reason: string;
   location: string;
   images: ProductImage[];
   avg_rating: number;

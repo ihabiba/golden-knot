@@ -455,6 +455,11 @@ function ProductsSection() {
                           {product.name}
                         </Link>
                         <p className="text-xs text-gray-400 mt-0.5">{product.category_name}</p>
+                        {!product.is_approved && product.rejection_reason && (
+                          <p className="text-xs text-red-500 mt-1 leading-snug">
+                            Rejected: {product.rejection_reason}
+                          </p>
+                        )}
                       </div>
                     </td>
                     <td className="px-4 py-3.5 hidden sm:table-cell font-semibold text-[#1C1C1C]">

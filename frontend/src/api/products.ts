@@ -24,8 +24,8 @@ export const deleteProduct = (slug: string) =>
 export const approveProduct = (slug: string) =>
   api.patch<{ detail: string; slug: string; is_approved: boolean }>(`/products/${slug}/approve/`);
 
-export const rejectProduct = (slug: string) =>
-  api.patch<{ detail: string; slug: string; is_approved: boolean }>(`/products/${slug}/reject/`);
+export const rejectProduct = (slug: string, data?: { reason?: string }) =>
+  api.patch<{ detail: string; slug: string; is_approved: boolean }>(`/products/${slug}/reject/`, data ?? {});
 
 export const uploadProductImage = (slug: string, file: File, isPrimary: boolean) => {
   const fd = new FormData();

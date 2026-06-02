@@ -1,10 +1,12 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Layers, Grid3X3, Sparkles, Image, BookOpen, AlignLeft, Shield, Globe, Award } from 'lucide-react';
 import type { Product } from '../types';
+import { getProducts } from '../api/products';
 import ProductCard from '../components/ProductCard';
 import CategoryCard from '../components/CategoryCard';
 
-// ─── Mock Data ────────────────────────────────────────────────────────────────
+// ─── Static config ────────────────────────────────────────────────────────────
 
 const CATEGORIES = [
   { id: 1, name: 'Hand-Knotted Rugs', count: 142, icon: Grid3X3, slug: 'hand-knotted-rugs', accentColor: '#C9A84C' },
@@ -13,17 +15,6 @@ const CATEGORIES = [
   { id: 4, name: 'Wall Hangings', count: 67, icon: Image, slug: 'wall-hangings', accentColor: '#2D4A22' },
   { id: 5, name: 'Prayer Rugs', count: 95, icon: BookOpen, slug: 'prayer-rugs', accentColor: '#4A1942' },
   { id: 6, name: 'Table Runners', count: 48, icon: AlignLeft, slug: 'table-runners', accentColor: '#8B4A2A' },
-];
-
-const PRODUCTS: Product[] = [
-  { id: 1, seller: 1, seller_name: 'Fatima Rugs', category: 1, category_name: 'Hand-Knotted Rugs', category_slug: 'hand-knotted-rugs', name: 'Hand-Knotted Wool Carpet', slug: 'hand-knotted-wool-carpet', description: '', price: '299.00', stock: 3, is_active: true, is_approved: true, location: 'Kabul', images: [], avg_rating: 4.8, review_count: 124, created_at: '', updated_at: '' },
-  { id: 2, seller: 2, seller_name: 'Kabul Weavers Co.', category: 2, category_name: 'Kilim Rugs', category_slug: 'kilim-rugs', name: 'Tribal Kilim Runner', slug: 'flat-weave-tribal-kilim-runner', description: '', price: '189.00', stock: 8, is_active: true, is_approved: true, location: 'Kabul', images: [], avg_rating: 4.6, review_count: 87, created_at: '', updated_at: '' },
-  { id: 3, seller: 3, seller_name: 'Herat Textile Arts', category: 3, category_name: 'Cushion Covers', category_slug: 'cushion-covers', name: 'Hand-Embroidered Cushion Cover', slug: 'hand-embroidered-silk-cushion-cover', description: '', price: '45.00', stock: 20, is_active: true, is_approved: true, location: 'Herat', images: [], avg_rating: 4.9, review_count: 203, created_at: '', updated_at: '' },
-  { id: 4, seller: 1, seller_name: 'Fatima Rugs', category: 5, category_name: 'Prayer Rugs', category_slug: 'prayer-rugs', name: 'Bokhara Wool Prayer Rug', slug: 'bokhara-wool-prayer-mat', description: '', price: '450.00', stock: 2, is_active: true, is_approved: true, location: 'Kabul', images: [], avg_rating: 4.7, review_count: 56, created_at: '', updated_at: '' },
-  { id: 5, seller: 3, seller_name: 'Herat Textile Arts', category: 4, category_name: 'Wall Hangings', category_slug: 'wall-hangings', name: 'Silk & Wool Wall Hanging', slug: 'hazara-embroidered-silk-panel', description: '', price: '220.00', stock: 4, is_active: true, is_approved: true, location: 'Herat', images: [], avg_rating: 4.5, review_count: 41, created_at: '', updated_at: '' },
-  { id: 6, seller: 2, seller_name: 'Kabul Weave House', category: 1, category_name: 'Hand-Knotted Rugs', category_slug: 'hand-knotted-rugs', name: 'Geometric Flat-Weave Area Rug', slug: 'chobi-ziegler-hand-knotted-rug', description: '', price: '380.00', stock: 4, is_active: true, is_approved: true, location: 'Kabul', images: [], avg_rating: 4.8, review_count: 92, created_at: '', updated_at: '' },
-  { id: 7, seller: 3, seller_name: 'Herat Textile Arts', category: 3, category_name: 'Cushion Covers', category_slug: 'cushion-covers', name: 'Vintage Kilim Cushion Set', slug: 'kilim-patchwork-cushion-set-2-pieces', description: '', price: '65.00', stock: 12, is_active: true, is_approved: true, location: 'Herat', images: [], avg_rating: 4.7, review_count: 118, created_at: '', updated_at: '' },
-  { id: 8, seller: 2, seller_name: 'Kabul Weave House', category: 6, category_name: 'Table Runners', category_slug: 'table-runners', name: 'Hand-Loomed Table Runner', slug: 'ikat-hand-loomed-table-runner', description: '', price: '95.00', stock: 14, is_active: true, is_approved: true, location: 'Kabul', images: [], avg_rating: 4.6, review_count: 74, created_at: '', updated_at: '' },
 ];
 
 const STATS = [
@@ -54,6 +45,16 @@ const WHY_US = [
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function HomePage() {
+  const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
+  const [productsLoading, setProductsLoading] = useState(true);
+
+  useEffect(() => {
+    getProducts({ ordering: '-avg_rating' })
+      .then(({ data }) => setFeaturedProducts(data.results.slice(0, 8)))
+      .catch(() => {})
+      .finally(() => setProductsLoading(false));
+  }, []);
+
   return (
     <main className="bg-[#FAFAF8]">
 
@@ -227,11 +228,34 @@ export default function HomePage() {
             </Link>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-            {PRODUCTS.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
+          {productsLoading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div key={i} className="bg-white rounded-2xl overflow-hidden border border-gray-100 animate-pulse">
+                  <div className="h-56 bg-gray-100" />
+                  <div className="p-4 space-y-2.5">
+                    <div className="h-3 bg-gray-100 rounded w-1/3" />
+                    <div className="h-4 bg-gray-100 rounded w-3/4" />
+                    <div className="h-3 bg-gray-100 rounded w-1/2" />
+                    <div className="h-5 bg-gray-100 rounded w-1/4 mt-2" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : featuredProducts.length === 0 ? (
+            <div className="text-center py-16">
+              <p className="text-gray-400 text-sm">Products coming soon — check back shortly.</p>
+              <Link to="/products" className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-[#C9A84C] hover:text-[#A8872F] transition-colors">
+                Browse all products <ArrowRight size={14} />
+              </Link>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+              {featuredProducts.map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
+          )}
         </div>
       </section>
 

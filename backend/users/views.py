@@ -87,6 +87,11 @@ class UserViewSet(viewsets.ModelViewSet):
             return User.objects.all()
         return User.objects.filter(pk=self.request.user.pk)
 
+    def update(self, request, *args, **kwargs):
+        if "role" in request.data and request.user.role != "admin":
+            return Response({"detail": "Forbidden."}, status=status.HTTP_403_FORBIDDEN)
+        return super().update(request, *args, **kwargs)
+
     @action(detail=False, methods=["get"])
     def me(self, request):
         return Response(UserSerializer(request.user, context={"request": request}).data)

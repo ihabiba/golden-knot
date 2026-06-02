@@ -506,9 +506,22 @@ All TypeScript interfaces in one file:
 - [x] `.gitignore` — extra safety net (`*.env` excluded, `*.env.example` whitelisted)
 - [x] `README.md` — full deployment guide: Render + Vercel, env vars table, post-deploy steps
 
+### Done ✅ (platform improvements)
+- [x] Backend: `Product.rejection_reason` field (CharField, blank=True) + migration 0003
+- [x] Backend: `Product.is_approved` default changed to `True` (trust-first moderation model)
+- [x] Backend: `reject` action saves reason, clears on `approve`, notifies seller via `notif_type="system"`
+- [x] Backend: Seller notification on order cancellation by customer (in `OrderViewSet.update()`)
+- [x] Backend: Admin-only role change protection in `UserViewSet.update()`
+- [x] Frontend: `HomePage` featured products replaced with real API call (`getProducts({ ordering: '-avg_rating' })`, 8 results), loading skeleton + empty state
+- [x] Frontend: `SellerDashboardPage` Products — shows red rejection reason below product name when `!is_approved && rejection_reason`
+- [x] Frontend: `AdminDashboardPage` Products — reject modal with optional reason textarea; reason sent to backend and stored on product
+- [x] Frontend: `AdminDashboardPage` Users — "Change Role" dropdown per user (customer/seller/admin); ConfirmModal before promoting to admin; calls `PATCH /api/users/<id>/` with new role
+- [x] `types/index.ts`: `Product` now includes `rejection_reason: string`
+- [x] `api/products.ts`: `rejectProduct(slug, { reason? })` accepts optional reason
+- [x] `tsc --noEmit` → 0 errors, `manage.py check` → 0 issues, migration applied cleanly
+
 ### To Build Next
 - [ ] Backend: HesabPay payment gateway integration
-- [ ] Backend: Customer cancel generates seller notification
 - [ ] Admin dashboard: pagination for large tables
 - [ ] OrdersPage / AccountPage: paginate large order lists
 

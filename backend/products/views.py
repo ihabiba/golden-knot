@@ -120,6 +120,7 @@ class ProductViewSet(viewsets.ModelViewSet):
             return Response({"detail": "Forbidden."}, status=status.HTTP_403_FORBIDDEN)
         product = self.get_object()
         product.is_approved = True
+        product.rejection_reason = ""
         product.save()
         return Response({"detail": "Product approved.", "slug": product.slug, "is_approved": True})
 
@@ -128,6 +129,19 @@ class ProductViewSet(viewsets.ModelViewSet):
         if not request.user.is_authenticated or request.user.role != "admin":
             return Response({"detail": "Forbidden."}, status=status.HTTP_403_FORBIDDEN)
         product = self.get_object()
+        reason = request.data.get("reason", "").strip()
         product.is_approved = False
+        product.rejection_reason = reason
         product.save()
+        from notifications.models import Notification
+        body = f"Your product '{product.name}' was not approved."
+        if reason:
+            body += f" Reason: {reason}"
+        Notification.objects.create(
+            recipient=product.seller,
+            notif_type="system",
+            title=f"Product not approved — {product.name}",
+            body=body,
+            data={"product_slug": product.slug},
+        )
         return Response({"detail": "Product rejected.", "slug": product.slug, "is_approved": False})

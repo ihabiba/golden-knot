@@ -7,7 +7,7 @@ import {
   DollarSign,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { getUsers, deactivateUser, activateUser } from '../api/users';
+import { getUsers, updateUser, deactivateUser, activateUser } from '../api/users';
 import { getAllSellers, approveSellerProfile, rejectSellerProfile } from '../api/store';
 import { getProducts, approveProduct, rejectProduct } from '../api/products';
 import { getOrders, updateOrderStatus } from '../api/orders';
@@ -17,7 +17,7 @@ import DashboardLayout from '../components/DashboardLayout';
 import StatCard from '../components/StatCard';
 import StatusBadge from '../components/StatusBadge';
 import ConfirmModal from '../components/ConfirmModal';
-import type { User, SellerProfile, Product, Order, PromoCode } from '../types';
+import type { User, UserRole, SellerProfile, Product, Order, PromoCode } from '../types';
 
 const NAV_ITEMS = [
   { key: 'overview',    label: 'Overview',    icon: <LayoutDashboard size={15} /> },
@@ -117,6 +117,8 @@ function UsersSection() {
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<number | null>(null);
   const [roleFilter, setRoleFilter] = useState('all');
+  const [roleChangeTarget, setRoleChangeTarget] = useState<{ user: User; newRole: UserRole } | null>(null);
+  const [roleChanging, setRoleChanging] = useState(false);
 
   useEffect(() => {
     getUsers()
@@ -138,6 +140,26 @@ function UsersSection() {
       toast.error(parseApiError(err));
     } finally {
       setUpdatingId(null);
+    }
+  };
+
+  const handleRoleChange = (user: User, newRole: UserRole) => {
+    if (newRole === user.role) return;
+    setRoleChangeTarget({ user, newRole });
+  };
+
+  const confirmRoleChange = async () => {
+    if (!roleChangeTarget) return;
+    setRoleChanging(true);
+    try {
+      const { data } = await updateUser(roleChangeTarget.user.id, { role: roleChangeTarget.newRole });
+      setUsers((prev) => prev.map((u) => u.id === roleChangeTarget.user.id ? data : u));
+      toast.success(`${roleChangeTarget.user.username} is now a ${roleChangeTarget.newRole}.`);
+      setRoleChangeTarget(null);
+    } catch (err) {
+      toast.error(parseApiError(err));
+    } finally {
+      setRoleChanging(false);
     }
   };
 
@@ -183,13 +205,22 @@ function UsersSection() {
                       <p className="text-xs text-gray-400">{user.email}</p>
                     </td>
                     <td className="px-4 py-3.5 hidden sm:table-cell">
-                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full capitalize ${
-                        user.role === 'admin' ? 'bg-purple-50 text-purple-700' :
-                        user.role === 'seller' ? 'bg-blue-50 text-blue-700' :
-                        'bg-gray-100 text-gray-600'
-                      }`}>
-                        {user.role}
-                      </span>
+                      <div className="relative inline-block">
+                        <select
+                          value={user.role}
+                          onChange={(e) => handleRoleChange(user, e.target.value as UserRole)}
+                          className={`appearance-none text-xs font-medium px-2.5 py-1 pr-6 rounded-full border focus:outline-none focus:ring-1 focus:ring-[#C9A84C] cursor-pointer capitalize ${
+                            user.role === 'admin' ? 'bg-purple-50 text-purple-700 border-purple-200' :
+                            user.role === 'seller' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                            'bg-gray-100 text-gray-600 border-gray-200'
+                          }`}
+                        >
+                          <option value="customer">customer</option>
+                          <option value="seller">seller</option>
+                          <option value="admin">admin</option>
+                        </select>
+                        <ChevronDown size={10} className="absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none opacity-60" />
+                      </div>
                     </td>
                     <td className="px-4 py-3.5 hidden md:table-cell text-xs text-gray-500">
                       {new Date(user.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
@@ -219,6 +250,21 @@ function UsersSection() {
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={!!roleChangeTarget}
+        onClose={() => setRoleChangeTarget(null)}
+        onConfirm={confirmRoleChange}
+        loading={roleChanging}
+        title={roleChangeTarget?.newRole === 'admin' ? 'Promote to Admin?' : 'Change User Role'}
+        message={
+          roleChangeTarget?.newRole === 'admin'
+            ? `This will give ${roleChangeTarget.user.username} full admin access to the platform, including user management, product approval, and promo codes. Are you sure?`
+            : `Change ${roleChangeTarget?.user.username}'s role from ${roleChangeTarget?.user.role} to ${roleChangeTarget?.newRole}?`
+        }
+        confirmLabel={roleChangeTarget?.newRole === 'admin' ? 'Yes, make admin' : 'Change role'}
+        variant={roleChangeTarget?.newRole === 'admin' ? 'danger' : 'default'}
+      />
     </div>
   );
 }
@@ -377,6 +423,9 @@ function AdminProductsSection() {
   const [loading, setLoading] = useState(true);
   const [approvalFilter, setApprovalFilter] = useState('all');
   const [updatingSlug, setUpdatingSlug] = useState<string | null>(null);
+  const [rejectTarget, setRejectTarget] = useState<Product | null>(null);
+  const [rejectReason, setRejectReason] = useState('');
+  const [rejecting, setRejecting] = useState(false);
 
   useEffect(() => {
     getProducts()
@@ -395,7 +444,7 @@ function AdminProductsSection() {
     setUpdatingSlug(slug);
     try {
       await approveProduct(slug);
-      setProducts((prev) => prev.map((p) => p.slug === slug ? { ...p, is_approved: true } : p));
+      setProducts((prev) => prev.map((p) => p.slug === slug ? { ...p, is_approved: true, rejection_reason: '' } : p));
       toast.success('Product approved!');
     } catch (err) {
       toast.error(parseApiError(err));
@@ -404,16 +453,25 @@ function AdminProductsSection() {
     }
   };
 
-  const handleReject = async (slug: string) => {
-    setUpdatingSlug(slug);
+  const openRejectModal = (product: Product) => {
+    setRejectTarget(product);
+    setRejectReason('');
+  };
+
+  const confirmReject = async () => {
+    if (!rejectTarget) return;
+    setRejecting(true);
     try {
-      await rejectProduct(slug);
-      setProducts((prev) => prev.map((p) => p.slug === slug ? { ...p, is_approved: false } : p));
+      await rejectProduct(rejectTarget.slug, { reason: rejectReason });
+      setProducts((prev) => prev.map((p) =>
+        p.slug === rejectTarget.slug ? { ...p, is_approved: false, rejection_reason: rejectReason } : p
+      ));
       toast.success('Product rejected.');
+      setRejectTarget(null);
     } catch (err) {
       toast.error(parseApiError(err));
     } finally {
-      setUpdatingSlug(null);
+      setRejecting(false);
     }
   };
 
@@ -481,7 +539,7 @@ function AdminProductsSection() {
                             Approve
                           </button>
                           <button
-                            onClick={() => handleReject(product.slug)}
+                            onClick={() => openRejectModal(product)}
                             disabled={updatingSlug === product.slug}
                             className="flex items-center gap-1 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
                           >
@@ -490,7 +548,7 @@ function AdminProductsSection() {
                         </div>
                       ) : (
                         <button
-                          onClick={() => handleReject(product.slug)}
+                          onClick={() => openRejectModal(product)}
                           disabled={updatingSlug === product.slug}
                           className="text-xs font-medium px-3 py-1.5 rounded-lg border border-red-200 text-red-500 hover:bg-red-50 transition-colors disabled:opacity-50"
                         >
@@ -502,6 +560,51 @@ function AdminProductsSection() {
                 ))}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* Reject / Revoke reason modal */}
+      {rejectTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setRejectTarget(null)} />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-display text-base font-bold text-[#1C1C1C]">
+                {rejectTarget.is_approved ? 'Revoke Approval' : 'Reject Product'}
+              </h3>
+              <button onClick={() => setRejectTarget(null)} className="text-gray-400 hover:text-gray-600"><X size={16} /></button>
+            </div>
+            <p className="text-sm text-gray-600 mb-4 line-clamp-2">
+              <span className="font-medium">{rejectTarget.name}</span>
+              {' '}by {rejectTarget.seller_name}
+            </p>
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+                Reason <span className="text-gray-400 font-normal normal-case">(optional — shown to seller)</span>
+              </label>
+              <textarea
+                value={rejectReason}
+                onChange={(e) => setRejectReason(e.target.value)}
+                rows={3}
+                placeholder="e.g. Images are too low quality, please upload clearer photos."
+                className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-red-300 focus:ring-1 focus:ring-red-100 transition-colors resize-none"
+                autoFocus
+              />
+            </div>
+            <div className="flex gap-3 mt-5">
+              <button onClick={() => setRejectTarget(null)} className="flex-1 border border-gray-200 text-gray-600 font-medium py-2.5 rounded-xl text-sm hover:border-gray-400 transition-colors">
+                Cancel
+              </button>
+              <button
+                onClick={confirmReject}
+                disabled={rejecting}
+                className="flex-1 flex items-center justify-center gap-2 bg-red-500 hover:bg-red-600 text-white font-semibold py-2.5 rounded-xl text-sm transition-colors disabled:opacity-60"
+              >
+                {rejecting && <Loader2 size={14} className="animate-spin" />}
+                {rejectTarget.is_approved ? 'Revoke' : 'Reject'}
+              </button>
+            </div>
           </div>
         </div>
       )}
