@@ -533,10 +533,25 @@ All TypeScript interfaces in one file:
 - [x] Backend: `ProductSerializer` — `slug` added to `read_only_fields`; DRF no longer requires it on create/update
 - [x] `manage.py check` → 0 issues, `tsc --noEmit` → 0 errors
 
+### Done ✅ (forgot password + coming-soon cleanup)
+- [x] Backend: `POST /api/users/password-reset/` — accepts email, sends branded HTML reset email, always returns 200 (security: doesn't reveal if email exists)
+- [x] Backend: `POST /api/users/password-reset/confirm/` — accepts uid + token + new_password, validates with Django's `SetPasswordForm` and `PasswordResetTokenGenerator`
+- [x] Backend: Beautiful HTML email — black header with gold "GOLDEN KNOT", white body, gold CTA button, plain-text fallback
+- [x] Backend: Email settings in `settings.py` via env vars (`EMAIL_BACKEND`, `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_USE_TLS`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, `DEFAULT_FROM_EMAIL`, `FRONTEND_URL`)
+- [x] Backend: All email env vars documented in `.env.example` with Gmail App Password instructions
+- [x] Frontend: `api/auth.ts` — `forgotPassword(email)` and `resetPassword(uid, token, new_password)`
+- [x] Frontend: `ForgotPasswordPage` at `/forgot-password` — luxury split layout, email input, success state shows "check your inbox" regardless, back-to-login link
+- [x] Frontend: `ResetPasswordPage` at `/reset-password/:uid/:token` — luxury split layout, new + confirm password fields with show/hide, 5-segment strength indicator (Weak/Fair/Good/Strong), match validation, redirects to /login on success with toast
+- [x] Frontend: Both routes added to `App.tsx`
+- [x] Frontend: `LoginPage` "Forgot password?" already linked to `/forgot-password` (was pre-wired)
+- [x] Frontend: `FAQPage` — removed "coming soon" from forgot password and HesabPay answers; replaced with accurate copy
+- [x] Frontend: `CheckoutPage` — removed "Online payment via HesabPay is coming soon" line; Cash on Delivery section is clean
+- [x] `tsc --noEmit` → 0 errors, `manage.py check` → 0 issues
+
 ### To Build Next
 - [ ] Backend: HesabPay payment gateway integration
-- [ ] Admin dashboard: pagination for large tables
-- [ ] OrdersPage / AccountPage: paginate large order lists
+- [ ] Admin dashboard: pagination for large tables (done — see above batch)
+- [ ] Contact form: wire to a real email endpoint
 
 ### Later
 - [ ] Multi-currency display

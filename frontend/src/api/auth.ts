@@ -20,3 +20,9 @@ export const fetchCurrentUser = () =>
 
 export const googleLogin = (access_token: string) =>
   api.post<AuthTokens>('/auth/google/', { access_token });
+
+export const forgotPassword = (email: string) =>
+  api.post<{ detail: string }>('/users/password-reset/', { email });
+
+export const resetPassword = (uid: string, token: string, new_password: string) =>
+  api.post<{ detail: string }>('/users/password-reset/confirm/', { uid, token, new_password });

@@ -11,7 +11,7 @@ const FAQ_DATA: FAQSection[] = [
     items: [
       {
         q: 'How do I place an order?',
-        a: 'Browse our collection, add items to your cart, and proceed to checkout. You\'ll enter a shipping address and confirm your order. Payment integration (HesabPay) is coming soon — for now, orders are placed in test mode.',
+        a: 'Browse our collection, add items to your cart, and proceed to checkout. Enter your shipping address, review your order, and confirm. Payment is collected on delivery.',
       },
       {
         q: 'Can I buy from multiple sellers in one order?',
@@ -95,7 +95,7 @@ const FAQ_DATA: FAQSection[] = [
     items: [
       {
         q: 'How do I reset my password?',
-        a: 'From the login page, use "Forgot password" (coming soon), or log in and change your password under Account → Settings → Change Password.',
+        a: 'On the login page, click "Forgot password?" and enter your email. You\'ll receive a secure reset link within a few minutes. You can also change your password anytime from Account → Settings → Change Password.',
       },
       {
         q: 'Is my personal data safe?',

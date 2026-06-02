@@ -642,11 +642,8 @@ export default function CheckoutPage() {
                   <h3 className="font-display text-xl font-bold text-[#1C1C1C] mb-2">
                     Cash on Delivery
                   </h3>
-                  <p className="text-gray-500 text-sm mb-1">
+                  <p className="text-gray-500 text-sm mb-8">
                     Pay when your order arrives at your door.
-                  </p>
-                  <p className="text-gray-400 text-xs mb-8">
-                    Online payment via HesabPay is coming soon.
                   </p>
 
                   {/* Order total reminder */}
