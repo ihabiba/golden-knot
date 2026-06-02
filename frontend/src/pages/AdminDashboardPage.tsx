@@ -804,7 +804,7 @@ function PromoModal({
     } catch (err) {
       const fieldErrs = parseFieldErrors(err);
       if (Object.keys(fieldErrs).length) setErrors(fieldErrs);
-      else toast.error(parseApiError(err));
+      toast.error(parseApiError(err));
     } finally {
       setLoading(false);
     }

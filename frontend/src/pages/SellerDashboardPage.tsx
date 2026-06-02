@@ -203,6 +203,7 @@ function ProductModal({
   };
 
   const handleSubmit = async () => {
+    if (loading) return;
     setErrors({});
     if (!form.name.trim()) { setErrors({ name: 'Name is required.' }); return; }
     if (!form.price || parseFloat(form.price) <= 0) { setErrors({ price: 'Enter a valid price.' }); return; }
@@ -241,7 +242,7 @@ function ProductModal({
     } catch (err) {
       const fieldErrs = parseFieldErrors(err);
       if (Object.keys(fieldErrs).length) setErrors(fieldErrs);
-      else toast.error(parseApiError(err));
+      toast.error(parseApiError(err));
     } finally {
       setLoading(false);
     }
