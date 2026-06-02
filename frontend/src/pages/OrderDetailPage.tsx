@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
   ArrowLeft, Package, MapPin, Printer, ShoppingBag, CheckCircle2, Truck,
@@ -41,6 +41,7 @@ const STATUS_ORDER: OrderStatus[] = ['pending', 'confirmed', 'processing', 'ship
 export default function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { isAuthenticated, user } = useAuth();
   const { setItemCount, itemCount } = useCart();
 
@@ -80,7 +81,7 @@ export default function OrderDetailPage() {
     setReordering(true);
     let added = 0;
     let failed = 0;
-    for (const item of order.items) {
+    for (const item of visibleItems) {
       try {
         await addToCart(item.product, item.quantity);
         added += item.quantity;
@@ -93,7 +94,7 @@ export default function OrderDetailPage() {
     if (failed > 0 && added === 0) {
       toast.error('Items are no longer available.');
     } else if (failed > 0) {
-      toast.success(`${order.items.length - failed} item(s) added. ${failed} unavailable.`);
+      toast.success(`${visibleItems.length - failed} item(s) added. ${failed} unavailable.`);
       navigate('/cart');
     } else {
       toast.success('All items added to cart!');
@@ -134,8 +135,14 @@ export default function OrderDetailPage() {
   const total    = parseFloat(order.total_price);
   const addr     = order.shipping_address;
   const isCancelledOrRefunded = order.status === 'cancelled' || order.status === 'refunded';
-  // Seller viewing a customer's fulfillment order (they are the seller, not the buyer)
-  const isSellerFulfillmentView = user?.role === 'seller' && order.customer !== user?.id;
+  // ?mode=seller is set by SellerDashboardPage links — always show fulfillment view regardless
+  // of whether the seller is also the buyer of this order
+  const isSellerFulfillmentView = searchParams.get('mode') === 'seller'
+    || (user?.role === 'seller' && order.customer !== user?.id);
+  // Only show seller's own items in fulfillment view
+  const visibleItems = isSellerFulfillmentView
+    ? order.items.filter((item) => item.seller === user?.id)
+    : order.items;
   // Customer can cancel only if the order hasn't shipped yet
   const canCancel = !isSellerFulfillmentView
     && ['pending', 'confirmed', 'processing'].includes(order.status);
@@ -157,7 +164,7 @@ export default function OrderDetailPage() {
           </button>
           <div>
             <h1 className="font-display text-xl font-bold text-[#1C1C1C] leading-snug">
-              {itemSummary(order.items)}
+              {itemSummary(visibleItems)}
             </h1>
             {isSellerFulfillmentView ? (
               <p className="text-xs text-[#C9A84C] font-medium mt-1">
@@ -165,7 +172,7 @@ export default function OrderDetailPage() {
               </p>
             ) : (
               <p className="text-xs text-gray-400 mt-1">
-                by {[...new Set(order.items.map((i) => i.seller_name))].join(', ')}
+                by {[...new Set(visibleItems.map((i) => i.seller_name))].join(', ')}
               </p>
             )}
             <p className="text-xs text-gray-400 mt-0.5">
@@ -312,10 +319,10 @@ export default function OrderDetailPage() {
         {/* Items */}
         <div className="bg-white rounded-2xl border border-gray-100 p-6 mb-4">
           <h2 className="font-display text-base font-bold text-[#1C1C1C] mb-5">
-            {order.items.length} {order.items.length === 1 ? 'Item' : 'Items'}
+            {visibleItems.length} {visibleItems.length === 1 ? 'Item' : 'Items'}
           </h2>
           <div className="space-y-4">
-            {order.items.map((item) => {
+            {visibleItems.map((item) => {
               const palette = PALETTES[item.product % PALETTES.length];
               return (
                 <div
@@ -415,7 +422,7 @@ export default function OrderDetailPage() {
         onConfirm={handleCancel}
         loading={cancelling}
         title="Cancel this order?"
-        message={`Cancel your order for "${itemSummary(order.items)}"? This cannot be undone. The seller will be notified.`}
+        message={`Cancel your order for "${itemSummary(visibleItems)}"? This cannot be undone. The seller will be notified.`}
         confirmLabel="Yes, Cancel Order"
         variant="danger"
       />

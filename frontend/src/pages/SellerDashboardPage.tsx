@@ -83,7 +83,9 @@ function OverviewSection({
               {recentOrders.map((order) => (
                 <div key={order.id} className="flex items-center justify-between">
                   <div>
-                    <p className="text-xs font-medium text-[#1C1C1C]">#{order.id}</p>
+                    <p className="text-xs font-medium text-[#1C1C1C] truncate max-w-[150px]">
+                      {order.items[0]?.product_name ?? 'Order'}{order.items.length > 1 ? ` +${order.items.length - 1}` : ''}
+                    </p>
                     <p className="text-xs text-gray-400">
                       {new Date(order.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
                     </p>
@@ -689,10 +691,10 @@ function SellerOrdersSection() {
                 {orders.map((order) => (
                   <tr key={order.id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50/50">
 
-                    {/* Order ID + date + tracking */}
+                    {/* Order name + date + tracking */}
                     <td className="px-5 py-4">
-                      <Link to={`/orders/${order.id}`} className="font-medium text-[#1C1C1C] hover:text-[#C9A84C] transition-colors">
-                        #{order.id}
+                      <Link to={`/orders/${order.id}?mode=seller`} className="font-medium text-[#1C1C1C] hover:text-[#C9A84C] transition-colors line-clamp-1">
+                        {order.items[0]?.product_name ?? 'Order'}{order.items.length > 1 ? ` +${order.items.length - 1}` : ''}
                       </Link>
                       <p className="text-xs text-gray-400 mt-0.5">
                         {new Date(order.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
@@ -741,7 +743,7 @@ function SellerOrdersSection() {
                     <td className="px-5 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
                         <Link
-                          to={`/orders/${order.id}`}
+                          to={`/orders/${order.id}?mode=seller`}
                           className="p-1.5 text-gray-400 hover:text-[#C9A84C] transition-colors rounded-lg hover:bg-[#C9A84C]/10"
                           title="View order details"
                         >
