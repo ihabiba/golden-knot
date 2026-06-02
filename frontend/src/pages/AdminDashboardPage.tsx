@@ -29,6 +29,36 @@ const NAV_ITEMS = [
 ];
 
 const ORDER_STATUSES = ['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded'] as const;
+const PAGE_SIZE = 10;
+
+function Paginator({ page, total, onChange }: { page: number; total: number; onChange: (p: number) => void }) {
+  const pages = Math.ceil(total / PAGE_SIZE);
+  if (pages <= 1) return null;
+  return (
+    <div className="flex items-center justify-between px-5 py-3 border-t border-gray-100 bg-[#FAFAF8]">
+      <p className="text-xs text-gray-400">
+        {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, total)} of {total}
+      </p>
+      <div className="flex items-center gap-1">
+        <button
+          onClick={() => onChange(page - 1)}
+          disabled={page === 1}
+          className="px-2.5 py-1 text-xs rounded-lg border border-gray-200 text-gray-600 hover:border-gray-400 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+        >
+          ← Prev
+        </button>
+        <span className="px-3 py-1 text-xs font-medium text-[#1C1C1C]">{page} / {pages}</span>
+        <button
+          onClick={() => onChange(page + 1)}
+          disabled={page === pages}
+          className="px-2.5 py-1 text-xs rounded-lg border border-gray-200 text-gray-600 hover:border-gray-400 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+        >
+          Next →
+        </button>
+      </div>
+    </div>
+  );
+}
 
 // ─── Overview ─────────────────────────────────────────────────────────────────
 
@@ -119,6 +149,7 @@ function UsersSection() {
   const [roleFilter, setRoleFilter] = useState('all');
   const [roleChangeTarget, setRoleChangeTarget] = useState<{ user: User; newRole: UserRole } | null>(null);
   const [roleChanging, setRoleChanging] = useState(false);
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     getUsers()
@@ -128,6 +159,8 @@ function UsersSection() {
   }, []);
 
   const filtered = roleFilter === 'all' ? users : users.filter((u) => u.role === roleFilter);
+  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  useEffect(() => setPage(1), [roleFilter]);
 
   const toggleActive = async (user: User) => {
     setUpdatingId(user.id);
@@ -198,7 +231,7 @@ function UsersSection() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((user) => (
+                {paginated.map((user) => (
                   <tr key={user.id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50/50">
                     <td className="px-5 py-3.5">
                       <p className="font-medium text-[#1C1C1C]">{user.username}</p>
@@ -248,6 +281,7 @@ function UsersSection() {
               </tbody>
             </table>
           </div>
+          <Paginator page={page} total={filtered.length} onChange={setPage} />
         </div>
       )}
 
@@ -276,6 +310,7 @@ function SellersSection() {
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('all');
   const [updatingId, setUpdatingId] = useState<number | null>(null);
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     getAllSellers()
@@ -287,6 +322,8 @@ function SellersSection() {
   const filtered = statusFilter === 'all'
     ? sellers
     : sellers.filter((s) => s.status === statusFilter);
+  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  useEffect(() => setPage(1), [statusFilter]);
 
   const handleApprove = async (id: number) => {
     setUpdatingId(id);
@@ -353,7 +390,7 @@ function SellersSection() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((seller) => (
+                {paginated.map((seller) => (
                   <tr key={seller.id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50/50">
                     <td className="px-5 py-3.5">
                       <p className="font-medium text-[#1C1C1C]">{seller.user_username}</p>
@@ -410,6 +447,7 @@ function SellersSection() {
               </tbody>
             </table>
           </div>
+          <Paginator page={page} total={filtered.length} onChange={setPage} />
         </div>
       )}
     </div>
@@ -426,6 +464,7 @@ function AdminProductsSection() {
   const [rejectTarget, setRejectTarget] = useState<Product | null>(null);
   const [rejectReason, setRejectReason] = useState('');
   const [rejecting, setRejecting] = useState(false);
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     getProducts()
@@ -439,6 +478,8 @@ function AdminProductsSection() {
     : approvalFilter === 'pending'
     ? products.filter((p) => !p.is_approved)
     : products.filter((p) => p.is_approved);
+  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  useEffect(() => setPage(1), [approvalFilter]);
 
   const handleApprove = async (slug: string) => {
     setUpdatingSlug(slug);
@@ -514,7 +555,7 @@ function AdminProductsSection() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((product) => (
+                {paginated.map((product) => (
                   <tr key={product.id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50/50">
                     <td className="px-5 py-3.5">
                       <p className="font-medium text-[#1C1C1C] line-clamp-1">{product.name}</p>
@@ -561,6 +602,7 @@ function AdminProductsSection() {
               </tbody>
             </table>
           </div>
+          <Paginator page={page} total={filtered.length} onChange={setPage} />
         </div>
       )}
 
@@ -619,6 +661,7 @@ function AdminOrdersSection() {
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('all');
   const [updatingId, setUpdatingId] = useState<number | null>(null);
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     getOrders()
@@ -628,6 +671,8 @@ function AdminOrdersSection() {
   }, []);
 
   const filtered = statusFilter === 'all' ? orders : orders.filter((o) => o.status === statusFilter);
+  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  useEffect(() => setPage(1), [statusFilter]);
 
   const handleStatusUpdate = async (orderId: number, status: string) => {
     setUpdatingId(orderId);
@@ -641,6 +686,14 @@ function AdminOrdersSection() {
       setUpdatingId(null);
     }
   };
+
+  const itemSummary = (order: Order) => {
+    const first = order.items[0]?.product_name ?? '—';
+    return order.items.length > 1 ? `${first} +${order.items.length - 1}` : first;
+  };
+
+  const sellerNames = (order: Order) =>
+    [...new Set(order.items.map((i) => i.seller_name))].join(', ') || '—';
 
   return (
     <div>
@@ -677,24 +730,29 @@ function AdminOrdersSection() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-100 bg-[#FAFAF8]">
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Order</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide hidden sm:table-cell">Items</th>
+                  <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Customer</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide hidden md:table-cell">Items</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide hidden lg:table-cell">Sellers</th>
                   <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Total</th>
                   <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
                   <th className="text-right px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Update</th>
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((order) => (
+                {paginated.map((order) => (
                   <tr key={order.id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50/50">
                     <td className="px-5 py-3.5">
-                      <p className="font-medium text-[#1C1C1C]">#{order.id}</p>
+                      <p className="font-medium text-[#1C1C1C]">{order.customer_username ?? `User #${order.customer}`}</p>
                       <p className="text-xs text-gray-400">
-                        {new Date(order.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                        {new Date(order.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
                       </p>
                     </td>
-                    <td className="px-4 py-3.5 hidden sm:table-cell text-gray-600">
-                      {order.items.length} item{order.items.length !== 1 ? 's' : ''}
+                    <td className="px-4 py-3.5 hidden md:table-cell">
+                      <p className="text-xs text-gray-700 line-clamp-1">{itemSummary(order)}</p>
+                      <p className="text-xs text-gray-400">{order.items.length} item{order.items.length !== 1 ? 's' : ''}</p>
+                    </td>
+                    <td className="px-4 py-3.5 hidden lg:table-cell">
+                      <p className="text-xs text-gray-600 line-clamp-1">{sellerNames(order)}</p>
                     </td>
                     <td className="px-4 py-3.5 font-semibold text-[#1C1C1C]">
                       ${parseFloat(order.total_price).toFixed(2)}
@@ -722,6 +780,7 @@ function AdminOrdersSection() {
               </tbody>
             </table>
           </div>
+          <Paginator page={page} total={filtered.length} onChange={setPage} />
         </div>
       )}
     </div>
