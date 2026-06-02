@@ -263,7 +263,7 @@ function UsersSection() {
             : `Change ${roleChangeTarget?.user.username}'s role from ${roleChangeTarget?.user.role} to ${roleChangeTarget?.newRole}?`
         }
         confirmLabel={roleChangeTarget?.newRole === 'admin' ? 'Yes, make admin' : 'Change role'}
-        variant={roleChangeTarget?.newRole === 'admin' ? 'danger' : 'default'}
+        variant={roleChangeTarget?.newRole === 'admin' ? 'danger' : undefined}
       />
     </div>
   );
