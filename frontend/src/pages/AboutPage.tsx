@@ -3,9 +3,9 @@ import { Heart, Globe, Shield, Sparkles } from 'lucide-react';
 
 const STATS = [
   { value: '200+', label: 'Artisan Weavers' },
-  { value: '50+', label: 'Weaving Patterns' },
-  { value: '30+', label: 'Countries Served' },
+  { value: '50+',  label: 'Weaving Patterns' },
   { value: '100%', label: 'Handcrafted' },
+  { value: '✓',   label: 'Fair Trade Verified' },
 ];
 
 const VALUES = [
@@ -32,7 +32,12 @@ const VALUES = [
 ];
 
 const TEAM = [
-  { name: 'Habiba Hassan', role: 'Full-Stack Developer & Platform Architect', initial: 'H' },
+  { name: 'Mohammad Zahid Mahmood',       role: 'Founder & Finance Lead',                       initial: 'MM' },
+  { name: 'Fathima Safna Mohamed Manas',  role: 'Project Manager',                              initial: 'FM' },
+  { name: 'Ahmad Ali Wasimi',             role: 'Community Liaison & Content Coordinator',      initial: 'AW' },
+  { name: 'Alva Riansyah',               role: 'Administrative Lead',                          initial: 'AR' },
+  { name: 'Shukri Adam Olad',            role: 'Marketing Lead',                               initial: 'SO' },
+  { name: 'Saleh Ahmed Bawazeer',        role: 'Operations Coordinator',                       initial: 'SB' },
 ];
 
 export default function AboutPage() {
@@ -59,9 +64,9 @@ export default function AboutPage() {
             <span className="text-[#C9A84C]">Global Commerce</span>
           </h1>
           <p className="text-gray-400 text-lg max-w-2xl mx-auto leading-relaxed">
-            Golden Knot was founded on a single belief: the most beautiful textiles in the world
-            deserve the most beautiful marketplace in the world — and the women who create them
-            deserve fair recognition and income.
+            Golden Knot was created to help Afghan women weavers overcome market barriers,
+            earn fair income, and preserve centuries-old carpet weaving traditions through
+            a dedicated digital marketplace.
           </p>
         </div>
       </div>
@@ -89,18 +94,20 @@ export default function AboutPage() {
               Preserving a Living Heritage
             </h2>
             <p className="text-gray-600 leading-relaxed mb-4">
-              Afghan carpet weaving is one of the world's oldest and most technically demanding
-              art forms. A single rug can take months or years to complete, with thousands of
-              knots tied by hand into patterns passed down through generations.
+              For generations, Afghan women weavers have preserved one of the country's most
+              treasured cultural traditions through handcrafted carpets. Despite their skill
+              and dedication, many artisans have faced limited market access, low incomes, and
+              dependence on intermediaries.
             </p>
             <p className="text-gray-600 leading-relaxed mb-4">
-              Yet the women who create these masterpieces have historically had no direct access
-              to global buyers — middlemen took the lion's share, and artisans were left with
-              a fraction of their work's true value.
+              Golden Knot was created to bridge this gap. Our platform connects Afghan artisans
+              directly with buyers, allowing them to showcase their craftsmanship, share their
+              stories, and earn fair compensation for their work.
             </p>
             <p className="text-gray-600 leading-relaxed">
-              Golden Knot changes that. We are a direct marketplace: artisans set their own
-              prices, tell their own stories, and receive fair payment for extraordinary work.
+              By combining traditional heritage with digital commerce, we aim to empower
+              weavers, preserve cultural identity, and create sustainable economic opportunities
+              for artisan communities.
             </p>
           </div>
           <div className="relative">
@@ -154,14 +161,14 @@ export default function AboutPage() {
           <span className="text-[#C9A84C] text-xs font-semibold uppercase tracking-widest">The People Behind It</span>
           <h2 className="font-display text-3xl font-bold text-[#1C1C1C] mt-3">Our Team</h2>
         </div>
-        <div className="flex justify-center gap-8 flex-wrap">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-8 max-w-2xl mx-auto">
           {TEAM.map(({ name, role, initial }) => (
             <div key={name} className="text-center">
-              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[#C9A84C] to-[#8B2525] flex items-center justify-center text-white font-display text-2xl font-bold mx-auto mb-3">
+              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[#C9A84C] to-[#8B2525] flex items-center justify-center text-white font-display text-lg font-bold mx-auto mb-3">
                 {initial}
               </div>
               <p className="font-semibold text-[#1C1C1C] text-sm">{name}</p>
-              <p className="text-xs text-gray-500 mt-0.5">{role}</p>
+              <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">{role}</p>
             </div>
           ))}
         </div>

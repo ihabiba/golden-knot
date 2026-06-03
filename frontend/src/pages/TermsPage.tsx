@@ -12,7 +12,7 @@ const sections = [
   {
     title: '2. User Accounts',
     body: [
-      'You must be at least 16 years old to create an account.',
+      'You must be at least 18 years old to create an account.',
       'You are responsible for maintaining the confidentiality of your account credentials.',
       'You must provide accurate and complete information when registering. False information may result in account termination.',
       'You are responsible for all activities that occur under your account.',
@@ -29,7 +29,7 @@ const sections = [
   {
     title: '4. Seller Responsibilities',
     body: [
-      'Sellers must be verified Afghan artisans or weavers and must provide only authentic, handcrafted products.',
+      'Sellers must be verified Afghan artisans, weavers, or approved craft producers and must provide only authentic, handcrafted products.',
       'Sellers are responsible for accurate product descriptions, pricing, and stock levels.',
       'Sellers must ship orders promptly upon confirmation and update order statuses accordingly.',
       'Sellers must not list counterfeit, stolen, or prohibited items. Violations will result in immediate account termination.',
@@ -57,7 +57,7 @@ const sections = [
   {
     title: '7. Payments and Fees',
     body: [
-      'Buyers pay the price listed at checkout. Payment processing is handled securely via our payment partner.',
+      'Buyers pay the price listed at checkout. During the MVP phase, payments may be processed through Cash on Delivery or approved payment providers available on the Platform.',
       'Sellers receive payouts minus the Platform\'s commission. Payout schedules are outlined in the Seller Agreement.',
       'Golden Knot reserves the right to adjust fee structures with reasonable notice to sellers.',
       'All prices on the Platform are displayed in US Dollars (USD) unless otherwise stated.',
@@ -90,8 +90,8 @@ const sections = [
   {
     title: '11. Governing Law',
     body: [
-      'These Terms are governed by and construed in accordance with applicable international commercial law.',
-      'Any disputes shall be resolved through good-faith negotiation. If that fails, disputes may be submitted to binding arbitration.',
+      'These Terms are intended for demonstration purposes during the MVP phase of the Golden Knot platform. Legal provisions may be updated as the platform expands and formal registration is completed.',
+      'Any disputes should first be resolved through communication between the buyer and seller. Golden Knot may assist in mediating disputes where appropriate.',
       'These Terms do not limit any consumer protection rights you may have under the laws of your country.',
     ],
   },
@@ -132,9 +132,17 @@ export default function TermsPage() {
             ))}
           </div>
 
-          <div className="mt-12 pt-8 border-t border-gray-100 text-center">
+          <div className="mt-10 p-5 bg-[#C9A84C]/8 border border-[#C9A84C]/20 rounded-xl">
+            <p className="text-sm text-gray-600 leading-relaxed">
+              <strong className="text-[#1C1C1C]">Platform Status:</strong> Golden Knot is currently
+              operating as a pilot social-business marketplace. Certain features, policies, and
+              services may evolve as the platform develops.
+            </p>
+          </div>
+
+          <div className="mt-8 pt-8 border-t border-gray-100 text-center">
             <p className="text-xs text-gray-400">
-              Golden Knot · hello@goldenknot.com · &copy; {new Date().getFullYear()}
+              Golden Knot · safnafathima441@gmail.com · &copy; {new Date().getFullYear()}
             </p>
           </div>
         </div>
