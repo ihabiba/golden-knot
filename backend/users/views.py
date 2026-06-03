@@ -260,22 +260,23 @@ def password_reset_request(request):
     html_body = _build_reset_email_html(reset_url, user.username)
     text_body  = f"Hi {user.username},\n\nReset your Golden Knot password here:\n{reset_url}\n\nThis link expires in 24 hours.\n\nIf you didn't request this, ignore this email."
 
+    # NOTE: Requires goldenknot.store verified on Resend and DEFAULT_FROM_EMAIL
+    # set to "Golden Knot <noreply@goldenknot.store>" for delivery to any recipient.
     def _send():
         try:
             payload = json.dumps({
-                "sender":      {"name": "Golden Knot", "email": django_settings.BREVO_SENDER_EMAIL},
-                "to":          [{"email": user.email}],
-                "subject":     "Reset your Golden Knot password",
-                "htmlContent": html_body,
-                "textContent": text_body,
+                "from":    django_settings.DEFAULT_FROM_EMAIL,
+                "to":      [user.email],
+                "subject": "Reset your Golden Knot password",
+                "html":    html_body,
+                "text":    text_body,
             }).encode("utf-8")
             req = urllib.request.Request(
-                "https://api.brevo.com/v3/smtp/email",
+                "https://api.resend.com/emails",
                 data=payload,
                 headers={
-                    "api-key":      django_settings.BREVO_API_KEY,
-                    "Content-Type": "application/json",
-                    "Accept":       "application/json",
+                    "Authorization": f"Bearer {django_settings.RESEND_API_KEY}",
+                    "Content-Type":  "application/json",
                 },
                 method="POST",
             )

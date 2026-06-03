@@ -190,9 +190,10 @@ EMAIL_HOST_USER     = config("EMAIL_HOST_USER",     default="")
 EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD", default="")
 DEFAULT_FROM_EMAIL  = config("DEFAULT_FROM_EMAIL",  default="Golden Knot <hello@goldenknot.com>")
 EMAIL_TIMEOUT  = 10  # seconds — prevents SMTP hangs from blocking gunicorn workers
-FRONTEND_URL = config("FRONTEND_URL", default="http://localhost:5173")
-BREVO_API_KEY      = config("BREVO_API_KEY",      default="")
-BREVO_SENDER_EMAIL = config("BREVO_SENDER_EMAIL", default="")
+FRONTEND_URL   = config("FRONTEND_URL",   default="http://localhost:5173")
+# NOTE: Full email delivery requires goldenknot.store to be verified on Resend
+# and DEFAULT_FROM_EMAIL updated to "Golden Knot <noreply@goldenknot.store>"
+RESEND_API_KEY = config("RESEND_API_KEY", default="")
 
 # ── JWT ───────────────────────────────────────────────────────────────────────
 SIMPLE_JWT = {
