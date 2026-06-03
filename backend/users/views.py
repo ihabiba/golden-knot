@@ -3,7 +3,6 @@ import logging
 import threading
 import urllib.request
 import urllib.error
-import resend
 
 logger = logging.getLogger(__name__)
 
@@ -263,14 +262,25 @@ def password_reset_request(request):
 
     def _send():
         try:
-            resend.api_key = django_settings.RESEND_API_KEY
-            resend.Emails.send({
-                "from": django_settings.DEFAULT_FROM_EMAIL,
-                "to": [user.email],
-                "subject": "Reset your Golden Knot password",
-                "html": html_body,
-                "text": text_body,
-            })
+            payload = json.dumps({
+                "sender":      {"name": "Golden Knot", "email": django_settings.BREVO_SENDER_EMAIL},
+                "to":          [{"email": user.email}],
+                "subject":     "Reset your Golden Knot password",
+                "htmlContent": html_body,
+                "textContent": text_body,
+            }).encode("utf-8")
+            req = urllib.request.Request(
+                "https://api.brevo.com/v3/smtp/email",
+                data=payload,
+                headers={
+                    "api-key":      django_settings.BREVO_API_KEY,
+                    "Content-Type": "application/json",
+                    "Accept":       "application/json",
+                },
+                method="POST",
+            )
+            with urllib.request.urlopen(req, timeout=10):
+                pass
             logger.info("Password reset email sent to %s", user.email)
         except Exception as exc:
             logger.error("Password reset email FAILED for %s: %s", user.email, exc)
