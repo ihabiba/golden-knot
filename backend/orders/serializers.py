@@ -17,6 +17,11 @@ class OrderItemSerializer(serializers.ModelSerializer):
             "product_image",
         ]
 
+    def validate_quantity(self, value):
+        if value < 1:
+            raise serializers.ValidationError("Quantity must be at least 1.")
+        return value
+
     def get_product_image(self, obj) -> str | None:
         primary = (
             obj.product.images.filter(is_primary=True).first()

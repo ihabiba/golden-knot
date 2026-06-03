@@ -14,3 +14,4 @@ gunicorn==21.2.0
 whitenoise==6.7.0
 setuptools>=65.0
 django-allauth[socialaccount]==0.63.6
+django-ratelimit==4.1.0

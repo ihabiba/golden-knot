@@ -14,6 +14,15 @@ class SellerProfileSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ["id", "user", "user_email", "user_username", "status", "created_at"]
 
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        request = self.context.get("request")
+        if not request or not request.user.is_authenticated:
+            data.pop("bank_account_details", None)
+        elif request.user.role != "admin" and instance.user != request.user:
+            data.pop("bank_account_details", None)
+        return data
+
 
 class PayoutSerializer(serializers.ModelSerializer):
     class Meta:

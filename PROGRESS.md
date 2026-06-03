@@ -263,7 +263,7 @@ Fields: `full_name`, `address_line1`, `address_line2`, `city`, `country`, `posta
 
 | File | Contents |
 |------|----------|
-| `requirements.txt` | Django 5, DRF 3.15, simplejwt, cors-headers, dj-database-url, psycopg2-binary, python-decouple, Pillow, django-storages, boto3 |
+| `requirements.txt` | Django 5, DRF 3.15, simplejwt, cors-headers, dj-database-url, psycopg2-binary, python-decouple, Pillow, django-storages, boto3, django-ratelimit |
 
 ---
 
@@ -573,6 +573,18 @@ All TypeScript interfaces in one file:
 - [x] `tsc --noEmit` → 0 errors (final check)
 - [x] All HesabPay references removed from the entire codebase
 - [x] All "coming soon" text removed from user-facing pages
+
+### Done ✅ (security hardening)
+- [x] Backend: `django-ratelimit==4.1.0` added to requirements.txt
+- [x] Backend: Rate limiting on `/api/auth/token/` — 5 requests/min per IP via `RateLimitedTokenObtainPairView`; returns 429 with clear message
+- [x] Backend: Rate limiting on `/api/users/password-reset/` — 3 requests/min per IP; returns 429
+- [x] Backend: Security headers — `SECURE_CONTENT_TYPE_NOSNIFF=True`, `X_FRAME_OPTIONS="DENY"`, `SECURE_REFERRER_POLICY="strict-origin-when-cross-origin"`
+- [x] Backend: `RegisterSerializer` — `validate_password()` now calls Django's built-in validators (min length, common password check, similarity check, numeric-only check)
+- [x] Backend: `ReviewSerializer` — `validate_rating()` enforces 1–5 range server-side
+- [x] Backend: `OrderItemSerializer` — `validate_quantity()` enforces positive integer (≥1)
+- [x] Backend: `SellerProfileSerializer` — `to_representation()` hides `bank_account_details` from non-admin, non-owner requesters
+- [x] Backend: Admin endpoint protection on approve/reject — confirmed ✅ already correct (products + sellers both return 403 for non-admin)
+- [x] `manage.py check` → 0 issues, `tsc --noEmit` → 0 errors
 
 ### Post-Presentation / Pending
 - [ ] **Email to all recipients** — verify `goldenknot.store` on Resend → update `DEFAULT_FROM_EMAIL=Golden Knot <noreply@goldenknot.store>` in Render

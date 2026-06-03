@@ -11,6 +11,8 @@ from rest_framework.decorators import action, api_view, permission_classes as dr
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.views import TokenObtainPairView
+from django_ratelimit.core import is_ratelimited
 from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
 from django.contrib.auth.forms import SetPasswordForm
@@ -20,6 +22,16 @@ from django.conf import settings as django_settings
 from .serializers import UserSerializer, RegisterSerializer
 
 User = get_user_model()
+
+
+class RateLimitedTokenObtainPairView(TokenObtainPairView):
+    def post(self, request, *args, **kwargs):
+        if is_ratelimited(request, group="login", key="ip", rate="5/m", increment=True):
+            return Response(
+                {"detail": "Too many login attempts. Please try again in a minute."},
+                status=status.HTTP_429_TOO_MANY_REQUESTS,
+            )
+        return super().post(request, *args, **kwargs)
 
 
 @api_view(["POST"])
@@ -243,6 +255,12 @@ def _build_reset_email_html(reset_url: str, username: str) -> str:
 @api_view(["POST"])
 @drf_permission_classes([AllowAny])
 def password_reset_request(request):
+    if is_ratelimited(request, group="password_reset", key="ip", rate="3/m", increment=True):
+        return Response(
+            {"detail": "Too many requests. Please wait before trying again."},
+            status=status.HTTP_429_TOO_MANY_REQUESTS,
+        )
+
     email = request.data.get("email", "").strip().lower()
     if not email:
         return Response({"detail": "Email is required."}, status=status.HTTP_400_BAD_REQUEST)
