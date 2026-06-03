@@ -3,6 +3,7 @@ import logging
 import threading
 import urllib.request
 import urllib.error
+import resend
 
 logger = logging.getLogger(__name__)
 
@@ -16,7 +17,6 @@ from django.contrib.auth.tokens import default_token_generator
 from django.contrib.auth.forms import SetPasswordForm
 from django.utils.encoding import force_bytes, force_str
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
-from django.core.mail import EmailMultiAlternatives
 from django.conf import settings as django_settings
 from .serializers import UserSerializer, RegisterSerializer
 
@@ -261,17 +261,16 @@ def password_reset_request(request):
     html_body = _build_reset_email_html(reset_url, user.username)
     text_body  = f"Hi {user.username},\n\nReset your Golden Knot password here:\n{reset_url}\n\nThis link expires in 24 hours.\n\nIf you didn't request this, ignore this email."
 
-    msg = EmailMultiAlternatives(
-        subject="Reset your Golden Knot password",
-        body=text_body,
-        from_email=django_settings.DEFAULT_FROM_EMAIL,
-        to=[user.email],
-    )
-    msg.attach_alternative(html_body, "text/html")
-
     def _send():
         try:
-            msg.send(fail_silently=False)
+            resend.api_key = django_settings.RESEND_API_KEY
+            resend.Emails.send({
+                "from": django_settings.DEFAULT_FROM_EMAIL,
+                "to": [user.email],
+                "subject": "Reset your Golden Knot password",
+                "html": html_body,
+                "text": text_body,
+            })
             logger.info("Password reset email sent to %s", user.email)
         except Exception as exc:
             logger.error("Password reset email FAILED for %s: %s", user.email, exc)
