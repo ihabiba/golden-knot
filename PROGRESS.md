@@ -565,14 +565,19 @@ All TypeScript interfaces in one file:
 - [x] Frontend: `TermsPage` — footer email updated to safnafathima441@gmail.com
 - [x] `tsc --noEmit` → 0 errors
 
-### To Build Next
-- [ ] Backend: HesabPay payment gateway integration
-- [ ] Admin dashboard: pagination for large tables (done — see above batch)
-- [ ] Contact form: wire to a real email endpoint
+### Done ✅ (pre-presentation final pass)
+- [x] Frontend: `RegisterPage` — removed "2,500+" and "via HesabPay"; now says "500+ handcrafted products" and "Cash on Delivery"
+- [x] Frontend: `ProductDetailPage` — trust badge "via HesabPay" → "Cash on Delivery"
+- [x] Frontend: `HomePage` — empty-state fallback text no longer says "coming soon"
+- [x] Backend: `.env.example` updated to document Resend HTTP API (removed SMTP vars, added `RESEND_API_KEY`)
+- [x] `tsc --noEmit` → 0 errors (final check)
+- [x] All HesabPay references removed from the entire codebase
+- [x] All "coming soon" text removed from user-facing pages
 
-### Later
+### Post-Presentation / Pending
+- [ ] **Email to all recipients** — verify `goldenknot.store` on Resend → update `DEFAULT_FROM_EMAIL=Golden Knot <noreply@goldenknot.store>` in Render
+- [ ] **Contact form** — currently cosmetic (no real email sent); wire to backend endpoint when needed
+- [ ] **HesabPay payment gateway** — deferred; Cash on Delivery is current payment method
 - [ ] Multi-currency display
 - [ ] SEO meta tags + sitemap
-- [ ] Performance tuning + image optimization
-- [ ] Additional payment gateways
-- [ ] Real-time chat / messaging between buyers and sellers
+- [ ] Real-time buyer-seller messaging
