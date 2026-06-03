@@ -18,9 +18,9 @@ const CATEGORIES = [
 ];
 
 const STATS = [
-  { value: '2,500+', label: 'Handcrafted Products' },
-  { value: '300+', label: 'Afghan Artisans' },
-  { value: '50+', label: 'Countries Served' },
+  { value: '200+', label: 'Artisan Weavers' },
+  { value: '500+', label: 'Handcrafted Products' },
+  { value: '50+',  label: 'Weaving Patterns' },
   { value: '4.8★', label: 'Average Rating' },
 ];
 

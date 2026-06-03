@@ -34,9 +34,9 @@ const VALUES = [
 const TEAM = [
   { name: 'Mohammad Zahid Mahmood',       role: 'Founder & Finance Lead',                       initial: 'MM' },
   { name: 'Fathima Safna Mohamed Manas',  role: 'Project Manager',                              initial: 'FM' },
+  { name: 'Shukri Adam Olad',            role: 'Marketing Lead',                               initial: 'SO' },
   { name: 'Ahmad Ali Wasimi',             role: 'Community Liaison & Content Coordinator',      initial: 'AW' },
   { name: 'Alva Riansyah',               role: 'Administrative Lead',                          initial: 'AR' },
-  { name: 'Shukri Adam Olad',            role: 'Marketing Lead',                               initial: 'SO' },
   { name: 'Saleh Ahmed Bawazeer',        role: 'Operations Coordinator',                       initial: 'SB' },
 ];
 
