@@ -537,7 +537,9 @@ All TypeScript interfaces in one file:
 - [x] Backend: `POST /api/users/password-reset/` — accepts email, sends branded HTML reset email, always returns 200 (security: doesn't reveal if email exists)
 - [x] Backend: `POST /api/users/password-reset/confirm/` — accepts uid + token + new_password, validates with Django's `SetPasswordForm` and `PasswordResetTokenGenerator`
 - [x] Backend: Beautiful HTML email — black header with gold "GOLDEN KNOT", white body, gold CTA button, plain-text fallback
-- [x] Backend: Email settings in `settings.py` via env vars (`EMAIL_BACKEND`, `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_USE_TLS`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, `DEFAULT_FROM_EMAIL`, `FRONTEND_URL`)
+- [x] Backend: Email send wrapped in `threading.Thread` — HTTP response returns immediately, SMTP never blocks gunicorn workers
+- [x] Backend: `EMAIL_TIMEOUT = 10` in settings — caps any SMTP connection attempt; `EMAIL_USE_SSL` env var supported
+- [x] Backend: Email settings in `settings.py` via env vars (`EMAIL_BACKEND`, `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_USE_TLS`, `EMAIL_USE_SSL`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, `DEFAULT_FROM_EMAIL`, `FRONTEND_URL`)
 - [x] Backend: All email env vars documented in `.env.example` with Gmail App Password instructions
 - [x] Frontend: `api/auth.ts` — `forgotPassword(email)` and `resetPassword(uid, token, new_password)`
 - [x] Frontend: `ForgotPasswordPage` at `/forgot-password` — luxury split layout, email input, success state shows "check your inbox" regardless, back-to-login link
@@ -547,6 +549,21 @@ All TypeScript interfaces in one file:
 - [x] Frontend: `FAQPage` — removed "coming soon" from forgot password and HesabPay answers; replaced with accurate copy
 - [x] Frontend: `CheckoutPage` — removed "Online payment via HesabPay is coming soon" line; Cash on Delivery section is clean
 - [x] `tsc --noEmit` → 0 errors, `manage.py check` → 0 issues
+
+### Done ✅ (content updates + real team + terms corrections)
+- [x] Frontend: `AboutPage` — hero quote updated to official mission statement
+- [x] Frontend: `AboutPage` — mission/story section rewritten with the official platform description
+- [x] Frontend: `AboutPage` — stats updated: "100% Handcrafted" + "✓ Fair Trade Verified" replace placeholder stats
+- [x] Frontend: `AboutPage` — team section updated to all 6 real team members (Mohammad Zahid, Fathima Safna, Ahmad Ali, Alva, Shukri, Saleh) in a 2×3 grid
+- [x] Frontend: `Footer.tsx` — email updated to safnafathima441@gmail.com; Instagram + Facebook links updated to real URLs; Twitter/X icon removed
+- [x] Frontend: `ContactPage.tsx` — email updated to safnafathima441@gmail.com
+- [x] Frontend: `TermsPage` — minimum age raised from 16 → 18
+- [x] Frontend: `TermsPage` — seller eligibility updated to include "approved craft producers"
+- [x] Frontend: `TermsPage` — payment clause updated to reflect Cash on Delivery MVP approach
+- [x] Frontend: `TermsPage` — section 11 (Governing Law) updated: arbitration clause removed, MVP disclaimer added, dispute resolution updated to mediation-first
+- [x] Frontend: `TermsPage` — MVP pilot note added at bottom of page
+- [x] Frontend: `TermsPage` — footer email updated to safnafathima441@gmail.com
+- [x] `tsc --noEmit` → 0 errors
 
 ### To Build Next
 - [ ] Backend: HesabPay payment gateway integration
