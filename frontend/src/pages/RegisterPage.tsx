@@ -166,9 +166,9 @@ export default function RegisterPage() {
           {/* Role benefits */}
           <div className="mt-8 space-y-3">
             {[
-              'Access to 2,500+ handcrafted products',
+              'Access to 500+ handcrafted products',
               'Direct support to Afghan artisans',
-              'Secure payments via HesabPay',
+              'Cash on Delivery — safe and simple',
             ].map((benefit) => (
               <div key={benefit} className="flex items-center gap-2.5">
                 <CheckCircle2 size={14} className="text-[#C9A84C] flex-shrink-0" />

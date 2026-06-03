@@ -244,7 +244,7 @@ export default function HomePage() {
             </div>
           ) : featuredProducts.length === 0 ? (
             <div className="text-center py-16">
-              <p className="text-gray-400 text-sm">Products coming soon — check back shortly.</p>
+              <p className="text-gray-400 text-sm">No featured products available right now.</p>
               <Link to="/products" className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-[#C9A84C] hover:text-[#A8872F] transition-colors">
                 Browse all products <ArrowRight size={14} />
               </Link>

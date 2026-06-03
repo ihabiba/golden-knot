@@ -523,7 +523,7 @@ export default function ProductDetailPage() {
             {/* Trust badges */}
             <div className="grid grid-cols-2 gap-3">
               {[
-                { icon: '🔒', label: 'Secure Payment', sub: 'via HesabPay' },
+                { icon: '🔒', label: 'Secure Payment', sub: 'Cash on Delivery' },
                 { icon: '🌍', label: 'Worldwide Shipping', sub: 'Fully tracked' },
                 { icon: '✋', label: 'Handcrafted', sub: 'Authenticity guaranteed' },
                 { icon: '↩️', label: 'Easy Returns', sub: '30-day policy' },
