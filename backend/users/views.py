@@ -1,7 +1,10 @@
 import json
+import logging
 import threading
 import urllib.request
 import urllib.error
+
+logger = logging.getLogger(__name__)
 
 from rest_framework import viewsets, generics, permissions, status
 from rest_framework.decorators import action, api_view, permission_classes as drf_permission_classes
@@ -266,8 +269,14 @@ def password_reset_request(request):
     )
     msg.attach_alternative(html_body, "text/html")
 
-    # Send in a background thread — keeps the HTTP response fast even if SMTP is slow
-    threading.Thread(target=lambda: msg.send(fail_silently=True), daemon=True).start()
+    def _send():
+        try:
+            msg.send(fail_silently=False)
+            logger.info("Password reset email sent to %s", user.email)
+        except Exception as exc:
+            logger.error("Password reset email FAILED for %s: %s", user.email, exc)
+
+    threading.Thread(target=_send, daemon=True).start()
 
     return Response({"detail": "If this email is registered you'll receive a reset link shortly."})
 
