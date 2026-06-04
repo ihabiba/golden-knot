@@ -119,21 +119,13 @@ export default function AboutPage() {
             </p>
           </div>
           <div className="relative">
-            <div className="aspect-square rounded-2xl overflow-hidden bg-linear-to-br from-[#8B2525] via-[#C9A84C] to-[#1C3A5E] flex items-center justify-center">
-              <svg width="60%" height="60%" viewBox="0 0 200 200" className="opacity-30">
-                <defs>
-                  <pattern id="carpet" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
-                    <rect x="0" y="0" width="10" height="10" fill="rgba(255,255,255,0.4)" />
-                    <rect x="10" y="10" width="10" height="10" fill="rgba(255,255,255,0.4)" />
-                    <circle cx="5" cy="5" r="3" fill="rgba(255,255,255,0.2)" />
-                    <circle cx="15" cy="15" r="3" fill="rgba(255,255,255,0.2)" />
-                  </pattern>
-                </defs>
-                <rect width="200" height="200" fill="url(#carpet)" />
-              </svg>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-white/20 font-display text-6xl font-bold select-none">GK</span>
-              </div>
+            <div className="aspect-square rounded-2xl overflow-hidden shadow-2xl">
+              <img
+                src="/images/hero-bg.jpeg"
+                alt="Afghan weaver at work"
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-linear-to-t from-[#0A0A0A]/30 to-transparent" />
             </div>
             <div className="absolute -bottom-4 -right-4 w-24 h-24 bg-[#C9A84C]/10 rounded-2xl -z-10" />
           </div>

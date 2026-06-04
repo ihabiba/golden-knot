@@ -254,37 +254,29 @@ export default function HomePage() {
       </section>
 
       {/* ── Why Golden Knot ───────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden py-24">
-        {/* Background — hero image with strong dark overlay */}
-        <div className="absolute inset-0">
-          <img src="/images/hero-bg.jpeg" alt="" className="w-full h-full object-cover" />
-          <div className="absolute inset-0 bg-[#0A0A0A]/82" />
+      <section className="py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+        <div className="text-center mb-14">
+          <span className="text-[#C9A84C] text-xs font-semibold uppercase tracking-[0.25em]">
+            Why Choose Us
+          </span>
+          <h2 className="font-display text-[#1C1C1C] text-3xl sm:text-4xl font-bold mt-2">
+            The Golden Knot Difference
+          </h2>
         </div>
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-14">
-            <span className="text-[#C9A84C] text-xs font-semibold uppercase tracking-[0.25em]">
-              Why Choose Us
-            </span>
-            <h2 className="font-display text-white text-3xl sm:text-4xl font-bold mt-2">
-              The Golden Knot Difference
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {WHY_US.map(({ icon: Icon, title, desc }) => (
-              <div
-                key={title}
-                className="text-center group p-8 rounded-xl border border-white/10 hover:border-[#C9A84C]/50 hover:bg-white/5 transition-all duration-300"
-              >
-                <div className="w-14 h-14 rounded-full bg-[#C9A84C]/20 flex items-center justify-center mx-auto mb-5 group-hover:bg-[#C9A84C]/30 transition-colors duration-300">
-                  <Icon size={24} className="text-[#C9A84C]" />
-                </div>
-                <h3 className="font-display text-white font-semibold text-lg mb-3">{title}</h3>
-                <p className="text-gray-400 text-sm leading-relaxed">{desc}</p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {WHY_US.map(({ icon: Icon, title, desc }) => (
+            <div
+              key={title}
+              className="text-center group p-8 rounded-xl border border-gray-100 hover:border-[#C9A84C]/30 hover:shadow-lg transition-all duration-300"
+            >
+              <div className="w-14 h-14 rounded-full bg-[#C9A84C]/10 flex items-center justify-center mx-auto mb-5 group-hover:bg-[#C9A84C]/20 transition-colors duration-300">
+                <Icon size={24} className="text-[#C9A84C]" />
               </div>
-            ))}
-          </div>
+              <h3 className="font-display text-[#1C1C1C] font-semibold text-lg mb-3">{title}</h3>
+              <p className="text-gray-500 text-sm leading-relaxed">{desc}</p>
+            </div>
+          ))}
         </div>
       </section>
 
