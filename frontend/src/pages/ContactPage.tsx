@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { Mail, MapPin, Clock, Send, Loader2, CheckCircle } from 'lucide-react';
+import { sendContactForm } from '../api/auth';
+import { parseApiError } from '../utils/apiError';
 
 const CONTACT_INFO = [
   {
@@ -27,6 +29,7 @@ export default function ContactPage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [apiError, setApiError] = useState('');
 
   const set = (key: keyof typeof form) => (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -44,14 +47,19 @@ export default function ContactPage() {
     return Object.keys(errs).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
     setSubmitting(true);
-    setTimeout(() => {
-      setSubmitting(false);
+    setApiError('');
+    try {
+      await sendContactForm(form);
       setSubmitted(true);
-    }, 1200);
+    } catch (err) {
+      setApiError(parseApiError(err));
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const inp = (hasErr?: boolean) =>
@@ -84,7 +92,7 @@ export default function ContactPage() {
                   Thank you for reaching out. We'll get back to you within 24 hours.
                 </p>
                 <button
-                  onClick={() => { setSubmitted(false); setForm({ name: '', email: '', subject: '', message: '' }); }}
+                  onClick={() => { setSubmitted(false); setForm({ name: '', email: '', subject: '', message: '' }); setApiError(''); }}
                   className="text-[#C9A84C] text-sm font-semibold hover:underline"
                 >
                   Send another message
@@ -140,6 +148,9 @@ export default function ContactPage() {
                   <p className="text-right text-[11px] text-gray-400 mt-1">{form.message.length} / 1000</p>
                 </div>
 
+                {apiError && (
+                  <p className="text-red-500 text-sm text-center bg-red-50 border border-red-100 rounded-lg px-4 py-3">{apiError}</p>
+                )}
                 <button
                   type="submit"
                   disabled={submitting}

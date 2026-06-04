@@ -311,6 +311,103 @@ def password_reset_request(request):
 
 @api_view(["POST"])
 @drf_permission_classes([AllowAny])
+def contact_form(request):
+    if is_ratelimited(request, group="contact", key="ip", rate="5/m", increment=True):
+        return Response(
+            {"detail": "Too many requests. Please wait before trying again."},
+            status=status.HTTP_429_TOO_MANY_REQUESTS,
+        )
+
+    name    = request.data.get("name", "").strip()
+    email   = request.data.get("email", "").strip()
+    subject = request.data.get("subject", "").strip()
+    message = request.data.get("message", "").strip()
+
+    if not all([name, email, subject, message]):
+        return Response({"detail": "All fields are required."}, status=status.HTTP_400_BAD_REQUEST)
+    if len(message) < 20:
+        return Response({"detail": "Message must be at least 20 characters."}, status=status.HTTP_400_BAD_REQUEST)
+
+    html_body = f"""<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8" /></head>
+<body style="margin:0;padding:0;background:#F5F5F3;font-family:'Helvetica Neue',Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#F5F5F3;padding:40px 0;">
+    <tr><td align="center">
+      <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">
+        <tr>
+          <td style="background:#0A0A0A;padding:32px 40px;border-radius:12px 12px 0 0;text-align:center;">
+            <p style="margin:0;color:#C9A84C;font-size:13px;font-weight:600;letter-spacing:0.35em;text-transform:uppercase;">Golden Knot — Contact Form</p>
+          </td>
+        </tr>
+        <tr>
+          <td style="background:#ffffff;padding:40px;border-left:1px solid #E8E8E4;border-right:1px solid #E8E8E4;">
+            <h2 style="margin:0 0 24px;font-size:20px;font-weight:700;color:#1C1C1C;">New Contact Form Submission</h2>
+            <table width="100%" cellpadding="0" cellspacing="0">
+              <tr><td style="padding:10px 0;border-bottom:1px solid #F0EFEC;">
+                <span style="font-size:12px;color:#999;text-transform:uppercase;letter-spacing:0.1em;">From</span><br/>
+                <span style="font-size:15px;color:#1C1C1C;font-weight:600;">{name} &lt;{email}&gt;</span>
+              </td></tr>
+              <tr><td style="padding:10px 0;border-bottom:1px solid #F0EFEC;">
+                <span style="font-size:12px;color:#999;text-transform:uppercase;letter-spacing:0.1em;">Subject</span><br/>
+                <span style="font-size:15px;color:#1C1C1C;font-weight:600;">{subject}</span>
+              </td></tr>
+              <tr><td style="padding:16px 0 0;">
+                <span style="font-size:12px;color:#999;text-transform:uppercase;letter-spacing:0.1em;">Message</span><br/>
+                <p style="font-size:15px;color:#555;line-height:1.7;margin:8px 0 0;white-space:pre-wrap;">{message}</p>
+              </td></tr>
+            </table>
+          </td>
+        </tr>
+        <tr>
+          <td style="background:#ffffff;padding:16px 40px 32px;border-left:1px solid #E8E8E4;border-right:1px solid #E8E8E4;border-bottom:1px solid #E8E8E4;border-radius:0 0 12px 12px;">
+            <p style="margin:0;font-size:12px;color:#BBBAB5;">Golden Knot Contact Form &mdash; You can reply directly to this email.</p>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>"""
+
+    text_body = (
+        f"New contact form submission\n\n"
+        f"From: {name} <{email}>\n"
+        f"Subject: {subject}\n\n"
+        f"Message:\n{message}"
+    )
+
+    def _send():
+        try:
+            payload = json.dumps({
+                "from":     django_settings.DEFAULT_FROM_EMAIL,
+                "to":       ["zahidisok@gmail.com"],
+                "reply_to": email,
+                "subject":  f"[Golden Knot Contact] {subject}",
+                "html":     html_body,
+                "text":     text_body,
+            }).encode("utf-8")
+            req = urllib.request.Request(
+                "https://api.resend.com/emails",
+                data=payload,
+                headers={
+                    "Authorization": f"Bearer {django_settings.RESEND_API_KEY}",
+                    "Content-Type":  "application/json",
+                },
+                method="POST",
+            )
+            with urllib.request.urlopen(req, timeout=10):
+                pass
+            logger.info("Contact form email sent from %s", email)
+        except Exception as exc:
+            logger.error("Contact form email FAILED from %s: %s", email, exc)
+
+    threading.Thread(target=_send, daemon=True).start()
+    return Response({"detail": "Message sent successfully."})
+
+
+@api_view(["POST"])
+@drf_permission_classes([AllowAny])
 def password_reset_confirm(request):
     uid_b64      = request.data.get("uid", "")
     token        = request.data.get("token", "")

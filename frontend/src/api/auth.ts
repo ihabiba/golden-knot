@@ -26,3 +26,10 @@ export const forgotPassword = (email: string) =>
 
 export const resetPassword = (uid: string, token: string, new_password: string) =>
   api.post<{ detail: string }>('/users/password-reset/confirm/', { uid, token, new_password });
+
+export const sendContactForm = (data: {
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+}) => api.post<{ detail: string }>('/users/contact/', data);
