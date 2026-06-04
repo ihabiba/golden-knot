@@ -61,8 +61,14 @@ export default function HomePage() {
       {/* ── Hero ──────────────────────────────────────────────────────────── */}
       <section className="relative min-h-screen flex items-center overflow-hidden bg-[#0A0A0A]">
 
-        {/* Background — subtle geometric textile pattern */}
-        <div className="absolute inset-0 opacity-[0.04]">
+        {/* Mobile: hero image as full-bleed background with dark overlay */}
+        <div className="absolute inset-0 lg:hidden">
+          <img src="/images/hero-bg.jpeg" alt="" className="w-full h-full object-cover" />
+          <div className="absolute inset-0 bg-[#0A0A0A]/80" />
+        </div>
+
+        {/* Desktop: subtle geometric textile pattern on left side */}
+        <div className="absolute inset-0 hidden lg:block opacity-[0.04]">
           <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
             <defs>
               <pattern id="hero-pattern" x="0" y="0" width="60" height="60" patternUnits="userSpaceOnUse">
@@ -80,7 +86,7 @@ export default function HomePage() {
         <div className="absolute bottom-1/4 left-1/3 w-64 h-64 bg-[#C9A84C] rounded-full opacity-[0.04] blur-[80px] pointer-events-none" />
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 lg:py-0 w-full">
-          <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center min-h-screen lg:min-h-0 lg:py-32">
+          <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center min-h-screen lg:min-h-0 lg:py-28">
 
             {/* Left — Text */}
             <div className="order-2 lg:order-1">
@@ -129,39 +135,27 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Right — Textile mosaic */}
-            <div className="order-1 lg:order-2 flex justify-center lg:justify-end">
-              <div className="relative w-80 h-80 sm:w-96 sm:h-96 lg:w-105 lg:h-105">
-                {/* Outer ring */}
-                <div className="absolute inset-0 rounded-full border border-[#C9A84C]/20" />
-                <div className="absolute inset-4 rounded-full border border-[#C9A84C]/10" />
-
-                {/* Main mosaic grid — simulates a woven rug */}
-                <div className="absolute inset-8 rounded-2xl overflow-hidden shadow-2xl">
-                  <div className="grid grid-cols-6 grid-rows-6 w-full h-full">
-                    {[
-                      '#8B2525','#C9A84C','#1C3A5E','#8B2525','#2D4A22','#C9A84C',
-                      '#C9A84C','#1C1C1C','#C9A84C','#4A1942','#C9A84C','#8B2525',
-                      '#1C3A5E','#C9A84C','#8B4A2A','#C9A84C','#1C1C1C','#2D4A22',
-                      '#2D4A22','#8B2525','#C9A84C','#1C3A5E','#8B2525','#C9A84C',
-                      '#C9A84C','#4A1942','#1C1C1C','#C9A84C','#8B4A2A','#1C3A5E',
-                      '#8B2525','#C9A84C','#2D4A22','#8B2525','#C9A84C','#4A1942',
-                    ].map((color, i) => (
-                      <div
-                        key={i}
-                        className="border border-black/10"
-                        style={{ backgroundColor: color }}
-                      />
-                    ))}
-                  </div>
-                </div>
-
-                {/* Floating label */}
-                <div className="absolute -bottom-4 -right-4 bg-[#C9A84C] text-black px-4 py-2 rounded-lg shadow-lg">
-                  <p className="text-xs font-bold uppercase tracking-wider">Authentic</p>
-                  <p className="text-[10px] font-medium opacity-80">Afghan Craftsmanship</p>
-                </div>
+            {/* Right — Hero image (desktop only; mobile uses it as section background) */}
+            <div className="hidden lg:block order-1 lg:order-2 relative">
+              <div className="relative h-[580px] overflow-hidden rounded-2xl shadow-[0_30px_80px_rgba(0,0,0,0.7)]">
+                <img
+                  src="/images/hero-bg.jpeg"
+                  alt="Afghan textile craftsmanship"
+                  className="w-full h-full object-cover"
+                />
+                {/* Gradient blending left edge with the dark hero background */}
+                <div className="absolute inset-0 bg-gradient-to-r from-[#0A0A0A]/50 via-transparent to-transparent" />
+                {/* Bottom fade for depth */}
+                <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0A]/40 to-transparent" />
               </div>
+              {/* Floating label */}
+              <div className="absolute bottom-6 right-6 bg-[#C9A84C] text-black px-4 py-2 rounded-lg shadow-lg">
+                <p className="text-xs font-bold uppercase tracking-wider">Authentic</p>
+                <p className="text-[10px] font-medium opacity-80">Afghan Craftsmanship</p>
+              </div>
+              {/* Decorative gold border accent */}
+              <div className="absolute -top-3 -left-3 w-16 h-16 border-t-2 border-l-2 border-[#C9A84C]/40 rounded-tl-xl" />
+              <div className="absolute -bottom-3 -right-3 w-16 h-16 border-b-2 border-r-2 border-[#C9A84C]/40 rounded-br-xl" />
             </div>
           </div>
         </div>

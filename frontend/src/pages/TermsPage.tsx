@@ -142,7 +142,7 @@ export default function TermsPage() {
 
           <div className="mt-8 pt-8 border-t border-gray-100 text-center">
             <p className="text-xs text-gray-400">
-              Golden Knot · safnafathima441@gmail.com · &copy; {new Date().getFullYear()}
+              Golden Knot · zahidisok@gmail.com · &copy; {new Date().getFullYear()}
             </p>
           </div>
         </div>

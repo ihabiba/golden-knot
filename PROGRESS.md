@@ -586,6 +586,16 @@ All TypeScript interfaces in one file:
 - [x] Backend: Admin endpoint protection on approve/reject — confirmed ✅ already correct (products + sellers both return 403 for non-admin)
 - [x] `manage.py check` → 0 issues, `tsc --noEmit` → 0 errors
 
+### Done ✅ (real logo, hero image, contact email)
+- [x] Frontend: `HomePage` hero right side — replaced CSS mosaic grid with real `hero-bg.jpeg` image (h-[580px], rounded-2xl, gold accent corners, "Authentic" badge)
+- [x] Frontend: `HomePage` hero mobile — `hero-bg.jpeg` used as full-bleed background with `bg-[#0A0A0A]/80` overlay; text stays readable on top
+- [x] Frontend: `Navbar` — logo image (`/images/logo.jpeg`) displayed at `h-10` alongside "Golden Knot" text (text hidden on small screens for space)
+- [x] Frontend: `index.html` — browser tab favicon updated to `/images/logo.jpeg`
+- [x] Frontend: `AboutPage` — logo image (`h-20`) centered above hero headline
+- [x] Frontend: Contact email changed from `safnafathima441@gmail.com` → `zahidisok@gmail.com` in Footer, ContactPage, TermsPage
+- [x] Frontend: `AboutPage` — fixed `bg-gradient-to-br` → `bg-linear-to-br` (Tailwind v4 canonical class)
+- [x] `tsc --noEmit` → 0 errors
+
 ### Post-Presentation / Pending
 - [ ] **Email to all recipients** — verify `goldenknot.store` on Resend → update `DEFAULT_FROM_EMAIL=Golden Knot <noreply@goldenknot.store>` in Render
 - [ ] **Contact form** — currently cosmetic (no real email sent); wire to backend endpoint when needed

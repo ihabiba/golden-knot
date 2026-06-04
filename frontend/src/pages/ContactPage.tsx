@@ -5,7 +5,7 @@ const CONTACT_INFO = [
   {
     icon: <Mail size={20} className="text-[#C9A84C]" />,
     label: 'Email Us',
-    value: 'safnafathima441@gmail.com',
+    value: 'zahidisok@gmail.com',
     sub: 'We reply within 24 hours',
   },
   {

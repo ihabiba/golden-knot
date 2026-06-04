@@ -209,8 +209,13 @@ export default function Navbar() {
         <div className="flex items-center justify-between h-16">
 
           {/* Logo */}
-          <Link to="/" className="shrink-0 group" onClick={() => setMobileOpen(false)}>
-            <span className="text-[#C9A84C] font-semibold tracking-[0.3em] text-base uppercase group-hover:text-[#D4B96A] transition-colors duration-200">
+          <Link to="/" className="shrink-0 group flex items-center gap-3" onClick={() => setMobileOpen(false)}>
+            <img
+              src="/images/logo.jpeg"
+              alt="Golden Knot"
+              className="h-10 w-auto object-contain rounded-sm"
+            />
+            <span className="hidden sm:block text-[#C9A84C] font-semibold tracking-[0.3em] text-base uppercase group-hover:text-[#D4B96A] transition-colors duration-200">
               Golden Knot
             </span>
           </Link>

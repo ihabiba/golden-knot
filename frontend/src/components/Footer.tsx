@@ -62,7 +62,7 @@ export default function Footer() {
             </div>
             <div className="mt-2 flex items-center gap-2 text-gray-500 text-sm">
               <Mail size={14} className="text-[#C9A84C] shrink-0" />
-              <span>safnafathima441@gmail.com</span>
+              <span>zahidisok@gmail.com</span>
             </div>
 
             {/* Social icons */}

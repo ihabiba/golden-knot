@@ -58,6 +58,14 @@ export default function AboutPage() {
           </svg>
         </div>
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-24 text-center relative">
+          {/* Logo */}
+          <div className="flex justify-center mb-8">
+            <img
+              src="/images/logo.jpeg"
+              alt="Golden Knot"
+              className="h-20 w-auto object-contain rounded-lg shadow-[0_0_40px_rgba(201,168,76,0.2)]"
+            />
+          </div>
           <span className="inline-block text-[#C9A84C] text-xs font-semibold uppercase tracking-[0.3em] mb-4">Our Story</span>
           <h1 className="font-display text-4xl sm:text-5xl font-bold text-white mb-6 leading-tight">
             Where Ancient Craft Meets<br />
@@ -111,7 +119,7 @@ export default function AboutPage() {
             </p>
           </div>
           <div className="relative">
-            <div className="aspect-square rounded-2xl overflow-hidden bg-gradient-to-br from-[#8B2525] via-[#C9A84C] to-[#1C3A5E] flex items-center justify-center">
+            <div className="aspect-square rounded-2xl overflow-hidden bg-linear-to-br from-[#8B2525] via-[#C9A84C] to-[#1C3A5E] flex items-center justify-center">
               <svg width="60%" height="60%" viewBox="0 0 200 200" className="opacity-30">
                 <defs>
                   <pattern id="carpet" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
@@ -164,7 +172,7 @@ export default function AboutPage() {
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-8 max-w-2xl mx-auto">
           {TEAM.map(({ name, role, initial }) => (
             <div key={name} className="text-center">
-              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[#C9A84C] to-[#8B2525] flex items-center justify-center text-white font-display text-lg font-bold mx-auto mb-3">
+              <div className="w-20 h-20 rounded-full bg-linear-to-br from-[#C9A84C] to-[#8B2525] flex items-center justify-center text-white font-display text-lg font-bold mx-auto mb-3">
                 {initial}
               </div>
               <p className="font-semibold text-[#1C1C1C] text-sm">{name}</p>
