@@ -150,12 +150,29 @@ class UserViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=["patch"])
     def deactivate(self, request, pk=None):
-        if request.user.role != "admin":
-            return Response({"detail": "Forbidden."}, status=status.HTTP_403_FORBIDDEN)
         user = self.get_object()
+        # Admins can deactivate any account without a password
+        if request.user.role == "admin":
+            user.is_active = False
+            user.save()
+            return Response(UserSerializer(user, context={"request": request}).data)
+        # Users may only deactivate their own account, and must confirm with password
+        if request.user.pk != user.pk:
+            return Response({"detail": "Forbidden."}, status=status.HTTP_403_FORBIDDEN)
+        password = request.data.get("password", "").strip()
+        if not password:
+            return Response(
+                {"password": ["Your password is required to deactivate your account."]},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if not user.check_password(password):
+            return Response(
+                {"password": ["Incorrect password."]},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         user.is_active = False
         user.save()
-        return Response(UserSerializer(user, context={"request": request}).data)
+        return Response({"detail": "Account deactivated."})
 
     @action(detail=True, methods=["patch"])
     def activate(self, request, pk=None):

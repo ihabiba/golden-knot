@@ -720,6 +720,9 @@ function SettingsSection() {
   const [pwLoading, setPwLoading] = useState(false);
   const [pwErrors, setPwErrors] = useState<Record<string, string>>({});
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
+  const [deleteError, setDeleteError] = useState('');
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const handlePasswordChange = async () => {
     setPwErrors({});
@@ -836,26 +839,64 @@ function SettingsSection() {
         </button>
       </div>
 
-      <ConfirmModal
-        isOpen={deleteOpen}
-        onClose={() => setDeleteOpen(false)}
-        onConfirm={async () => {
-          if (!user) return;
-          try {
-            await deactivateUser(user.id);
-            toast.success('Account deactivated. Goodbye!');
-            logout();
-            navigate('/');
-          } catch {
-            toast.error('Could not deactivate account. Contact support.');
-          }
-          setDeleteOpen(false);
-        }}
-        title="Delete Account"
-        message="Your account will be deactivated immediately. All sessions will end. Are you sure?"
-        confirmLabel="Deactivate My Account"
-        variant="danger"
-      />
+      {deleteOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/60"
+            onClick={() => { setDeleteOpen(false); setDeletePassword(''); setDeleteError(''); }}
+          />
+          <div className="relative bg-white rounded-2xl shadow-2xl max-w-md w-full p-8">
+            <h3 className="font-display text-xl font-bold text-[#1C1C1C] mb-2">Delete Account</h3>
+            <p className="text-gray-500 text-sm mb-6">
+              Enter your password to confirm. Your account will be deactivated immediately and all active sessions will end.
+            </p>
+            <div className="mb-6">
+              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+                Confirm Password
+              </label>
+              <input
+                type="password"
+                value={deletePassword}
+                onChange={(e) => { setDeletePassword(e.target.value); setDeleteError(''); }}
+                placeholder="Enter your current password"
+                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-red-400 focus:ring-2 focus:ring-red-100 transition-colors"
+                autoFocus
+              />
+              {deleteError && <p className="text-red-500 text-xs mt-1.5">{deleteError}</p>}
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => { setDeleteOpen(false); setDeletePassword(''); setDeleteError(''); }}
+                className="flex-1 border border-gray-200 text-gray-600 hover:bg-gray-50 font-medium py-2.5 rounded-xl text-sm transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                disabled={deleteLoading || !deletePassword}
+                onClick={async () => {
+                  if (!user) return;
+                  setDeleteLoading(true);
+                  try {
+                    await deactivateUser(user.id, deletePassword);
+                    toast.success('Account deactivated. Goodbye!');
+                    logout();
+                    navigate('/');
+                  } catch (err) {
+                    const fieldErrs = parseFieldErrors(err);
+                    setDeleteError(fieldErrs.password || parseApiError(err));
+                  } finally {
+                    setDeleteLoading(false);
+                  }
+                }}
+                className="flex-1 bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white font-semibold py-2.5 rounded-xl text-sm transition-colors flex items-center justify-center gap-2"
+              >
+                {deleteLoading && <Loader2 size={14} className="animate-spin" />}
+                Deactivate My Account
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -12,8 +12,8 @@ export const updateUser = (id: number, data: FormData | Partial<User>) =>
 export const changePassword = (id: number, data: { old_password: string; password: string }) =>
   api.patch<{ detail: string }>(`/users/${id}/change-password/`, data);
 
-export const deactivateUser = (id: number) =>
-  api.patch<User>(`/users/${id}/deactivate/`);
+export const deactivateUser = (id: number, password?: string) =>
+  api.patch<User | { detail: string }>(`/users/${id}/deactivate/`, password ? { password } : {});
 
 export const activateUser = (id: number) =>
   api.patch<User>(`/users/${id}/activate/`);
