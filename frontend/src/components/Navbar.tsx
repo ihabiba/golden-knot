@@ -213,7 +213,7 @@ export default function Navbar() {
             <img
               src="/images/logo.jpeg"
               alt="Golden Knot"
-              className="h-10 w-auto object-contain rounded-sm"
+              className="h-10 w-10 object-cover rounded-full overflow-hidden"
             />
             <span className="hidden sm:block text-[#C9A84C] font-semibold tracking-[0.3em] text-base uppercase group-hover:text-[#D4B96A] transition-colors duration-200">
               Golden Knot

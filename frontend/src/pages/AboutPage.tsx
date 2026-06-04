@@ -63,7 +63,7 @@ export default function AboutPage() {
             <img
               src="/images/logo.jpeg"
               alt="Golden Knot"
-              className="h-20 w-auto object-contain rounded-lg shadow-[0_0_40px_rgba(201,168,76,0.2)]"
+              className="h-20 w-20 object-cover rounded-full overflow-hidden shadow-[0_0_40px_rgba(201,168,76,0.25)]"
             />
           </div>
           <span className="inline-block text-[#C9A84C] text-xs font-semibold uppercase tracking-[0.3em] mb-4">Our Story</span>
