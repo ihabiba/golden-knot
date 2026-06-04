@@ -13,7 +13,7 @@ export const changePassword = (id: number, data: { old_password: string; passwor
   api.patch<{ detail: string }>(`/users/${id}/change-password/`, data);
 
 export const deactivateUser = (id: number, password?: string) =>
-  api.patch<User | { detail: string }>(`/users/${id}/deactivate/`, password ? { password } : {});
+  api.patch<User>(`/users/${id}/deactivate/`, password ? { password } : {});
 
 export const activateUser = (id: number) =>
   api.patch<User>(`/users/${id}/activate/`);
