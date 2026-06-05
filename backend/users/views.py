@@ -391,7 +391,7 @@ def contact_form(request):
             resend.api_key = django_settings.RESEND_API_KEY
             result = resend.Emails.send({
                 "from":     django_settings.DEFAULT_FROM_EMAIL,
-                "to":       ["itshabibahassan@gmail.com"],
+                "to":       ["zahidisok@gmail.com"],
                 "reply_to": [email],
                 "subject":  f"[Golden Knot Contact] {subject}",
                 "html":     html_body,
