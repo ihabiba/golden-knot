@@ -22,6 +22,8 @@ import PrivacyPage from './pages/PrivacyPage';
 import TermsPage from './pages/TermsPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
+import VerifyEmailPage from './pages/VerifyEmailPage';
+import VerificationBanner from './components/VerificationBanner';
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -35,6 +37,7 @@ export default function App() {
       <ScrollToTop />
       <div className="flex flex-col min-h-screen">
         <Navbar />
+        <VerificationBanner />
         <div className="flex-1 pt-16">
           <Routes>
             <Route path="/" element={<HomePage />} />
@@ -57,6 +60,7 @@ export default function App() {
             <Route path="/terms" element={<TermsPage />} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/reset-password/:uid/:token" element={<ResetPasswordPage />} />
+            <Route path="/verify-email/:token" element={<VerifyEmailPage />} />
           </Routes>
         </div>
         <Footer />

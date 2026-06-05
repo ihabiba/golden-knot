@@ -17,3 +17,6 @@ export const deactivateUser = (id: number, password?: string) =>
 
 export const activateUser = (id: number) =>
   api.patch<User>(`/users/${id}/activate/`);
+
+export const resendVerification = () =>
+  api.post<{ detail: string }>('/users/resend-verification/');

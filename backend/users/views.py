@@ -1,5 +1,6 @@
 import json
 import logging
+import secrets
 import threading
 import urllib.request
 import urllib.error
@@ -83,6 +84,7 @@ def google_auth(request):
             username=username,
             password=None,   # unusable password — Google is the auth provider
             role="customer",
+            is_email_verified=True,
         )
 
     if not user.is_active:
@@ -96,9 +98,93 @@ def google_auth(request):
     return Response({"access": str(refresh.access_token), "refresh": str(refresh)})
 
 
+def _send_verification_email(user):
+    token = secrets.token_urlsafe(32)
+    user.email_verification_token = token
+    user.save(update_fields=["email_verification_token"])
+    verify_url = f"{django_settings.FRONTEND_URL}/verify-email/{token}"
+
+    html_body = f"""<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /></head>
+<body style="margin:0;padding:0;background:#F5F5F3;font-family:'Helvetica Neue',Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#F5F5F3;padding:40px 0;">
+    <tr><td align="center">
+      <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">
+        <tr>
+          <td style="background:#0A0A0A;padding:32px 40px;border-radius:12px 12px 0 0;text-align:center;">
+            <p style="margin:0;color:#C9A84C;font-size:13px;font-weight:600;letter-spacing:0.35em;text-transform:uppercase;">Golden Knot</p>
+          </td>
+        </tr>
+        <tr>
+          <td style="background:#ffffff;padding:48px 40px 40px;border-left:1px solid #E8E8E4;border-right:1px solid #E8E8E4;">
+            <h1 style="margin:0 0 12px;font-size:26px;font-weight:700;color:#1C1C1C;line-height:1.3;">Verify your email address</h1>
+            <p style="margin:0 0 8px;font-size:15px;color:#555;line-height:1.6;">Hi {user.username},</p>
+            <p style="margin:0 0 32px;font-size:15px;color:#555;line-height:1.6;">
+              Thanks for joining Golden Knot! Please verify your email address to ensure you can receive order updates and password reset emails.
+            </p>
+            <table cellpadding="0" cellspacing="0" style="margin:0 auto 32px;">
+              <tr>
+                <td style="background:#C9A84C;border-radius:8px;">
+                  <a href="{verify_url}" style="display:inline-block;padding:14px 36px;color:#0A0A0A;font-size:14px;font-weight:700;text-decoration:none;letter-spacing:0.03em;">
+                    Verify My Email
+                  </a>
+                </td>
+              </tr>
+            </table>
+            <p style="margin:0 0 8px;font-size:13px;color:#999;line-height:1.6;">Or copy and paste this link into your browser:</p>
+            <p style="margin:0;font-size:12px;color:#C9A84C;word-break:break-all;line-height:1.6;">{verify_url}</p>
+          </td>
+        </tr>
+        <tr>
+          <td style="background:#ffffff;padding:0 40px;border-left:1px solid #E8E8E4;border-right:1px solid #E8E8E4;">
+            <hr style="border:none;border-top:1px solid #F0EFEC;margin:0;" />
+          </td>
+        </tr>
+        <tr>
+          <td style="background:#ffffff;padding:24px 40px 32px;border-left:1px solid #E8E8E4;border-right:1px solid #E8E8E4;border-bottom:1px solid #E8E8E4;border-radius:0 0 12px 12px;">
+            <p style="margin:0;font-size:12px;color:#BBBAB5;line-height:1.6;">
+              If you didn't create a Golden Knot account, you can safely ignore this email.
+              &mdash; Golden Knot &copy; {__import__('datetime').date.today().year}
+            </p>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>"""
+
+    text_body = (
+        f"Hi {user.username},\n\n"
+        f"Please verify your Golden Knot email address:\n{verify_url}\n\n"
+        f"If you didn't create this account, ignore this email."
+    )
+
+    def _send():
+        try:
+            resend.api_key = django_settings.RESEND_API_KEY
+            result = resend.Emails.send({
+                "from":    django_settings.DEFAULT_FROM_EMAIL,
+                "to":      [user.email],
+                "subject": "Verify your Golden Knot email address",
+                "html":    html_body,
+                "text":    text_body,
+            })
+            logger.info("Verification email sent to %s | id=%s", user.email, result.get("id"))
+        except Exception as exc:
+            logger.error("Verification email FAILED for %s: %s", user.email, exc)
+
+    threading.Thread(target=_send, daemon=True).start()
+
+
 class RegisterView(generics.CreateAPIView):
     serializer_class = RegisterSerializer
     permission_classes = [permissions.AllowAny]
+
+    def perform_create(self, serializer):
+        user = serializer.save()
+        _send_verification_email(user)
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -316,6 +402,34 @@ def password_reset_request(request):
     threading.Thread(target=_send, daemon=True).start()
 
     return Response({"detail": "If this email is registered you'll receive a reset link shortly."})
+
+
+@api_view(["GET"])
+@drf_permission_classes([AllowAny])
+def verify_email(request, token):
+    try:
+        user = User.objects.get(email_verification_token=token)
+    except User.DoesNotExist:
+        return Response({"detail": "Invalid or expired verification link."}, status=status.HTTP_400_BAD_REQUEST)
+    user.is_email_verified = True
+    user.email_verification_token = ""
+    user.save(update_fields=["is_email_verified", "email_verification_token"])
+    return Response({"detail": "Email verified successfully."})
+
+
+@api_view(["POST"])
+@drf_permission_classes([permissions.IsAuthenticated])
+def resend_verification(request):
+    if is_ratelimited(request, group="resend_verification", key="user", rate="3/h", increment=True):
+        return Response(
+            {"detail": "Too many requests. Please wait before trying again."},
+            status=status.HTTP_429_TOO_MANY_REQUESTS,
+        )
+    user = request.user
+    if user.is_email_verified:
+        return Response({"detail": "Your email is already verified."})
+    _send_verification_email(user)
+    return Response({"detail": "Verification email sent."})
 
 
 @api_view(["POST"])
