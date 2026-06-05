@@ -298,26 +298,35 @@ def password_reset_request(request):
     # NOTE: Requires goldenknot.store verified on Resend and DEFAULT_FROM_EMAIL
     # set to "Golden Knot <noreply@goldenknot.store>" for delivery to any recipient.
     def _send():
+        resend_url  = "https://api.resend.com/emails"
+        from_addr   = django_settings.DEFAULT_FROM_EMAIL
+        api_key     = django_settings.RESEND_API_KEY
+        logger.info("Sending password reset email to %s | from=%s | url=%s | key_prefix=%s",
+                    user.email, from_addr, resend_url, api_key[:8] if api_key else "MISSING")
         try:
             payload = json.dumps({
-                "from":    django_settings.DEFAULT_FROM_EMAIL,
+                "from":    from_addr,
                 "to":      [user.email],
                 "subject": "Reset your Golden Knot password",
                 "html":    html_body,
                 "text":    text_body,
             }).encode("utf-8")
             req = urllib.request.Request(
-                "https://api.ap-northeast-1.resend.com/emails",
+                resend_url,
                 data=payload,
                 headers={
-                    "Authorization": f"Bearer {django_settings.RESEND_API_KEY}",
+                    "Authorization": f"Bearer {api_key}",
                     "Content-Type":  "application/json",
                 },
                 method="POST",
             )
-            with urllib.request.urlopen(req, timeout=10):
-                pass
-            logger.info("Password reset email sent to %s", user.email)
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                body = resp.read().decode()
+            logger.info("Password reset email sent to %s | response=%s", user.email, body)
+        except urllib.error.HTTPError as exc:
+            error_body = exc.read().decode() if exc.fp else "(no body)"
+            logger.error("Password reset email FAILED for %s | status=%s | body=%s",
+                         user.email, exc.code, error_body)
         except Exception as exc:
             logger.error("Password reset email FAILED for %s: %s", user.email, exc)
 
@@ -395,9 +404,12 @@ def contact_form(request):
     )
 
     def _send():
+        resend_url  = "https://api.resend.com/emails"
+        from_addr   = django_settings.DEFAULT_FROM_EMAIL
+        api_key     = django_settings.RESEND_API_KEY
         try:
             payload = json.dumps({
-                "from":     django_settings.DEFAULT_FROM_EMAIL,
+                "from":     from_addr,
                 "to":       ["zahidisok@gmail.com"],
                 "reply_to": email,
                 "subject":  f"[Golden Knot Contact] {subject}",
@@ -405,22 +417,70 @@ def contact_form(request):
                 "text":     text_body,
             }).encode("utf-8")
             req = urllib.request.Request(
-                "https://api.ap-northeast-1.resend.com/emails",
+                resend_url,
                 data=payload,
                 headers={
-                    "Authorization": f"Bearer {django_settings.RESEND_API_KEY}",
+                    "Authorization": f"Bearer {api_key}",
                     "Content-Type":  "application/json",
                 },
                 method="POST",
             )
-            with urllib.request.urlopen(req, timeout=10):
-                pass
-            logger.info("Contact form email sent from %s", email)
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                body = resp.read().decode()
+            logger.info("Contact form email sent from %s | response=%s", email, body)
+        except urllib.error.HTTPError as exc:
+            error_body = exc.read().decode() if exc.fp else "(no body)"
+            logger.error("Contact form email FAILED from %s | status=%s | body=%s",
+                         email, exc.code, error_body)
         except Exception as exc:
             logger.error("Contact form email FAILED from %s: %s", email, exc)
 
     threading.Thread(target=_send, daemon=True).start()
     return Response({"detail": "Message sent successfully."})
+
+
+@api_view(["GET"])
+@drf_permission_classes([AllowAny])
+def test_email(request):
+    """Diagnostic: send a test email and return the full Resend response."""
+    resend_url = "https://api.resend.com/emails"
+    from_addr  = getattr(django_settings, "DEFAULT_FROM_EMAIL", "MISSING")
+    api_key    = getattr(django_settings, "RESEND_API_KEY", "MISSING")
+    to_addr    = "itshabibahassan@gmail.com"
+
+    info = {
+        "resend_url": resend_url,
+        "from_addr":  from_addr,
+        "to_addr":    to_addr,
+        "api_key_prefix": api_key[:8] if api_key and api_key != "MISSING" else "MISSING",
+    }
+
+    try:
+        payload = json.dumps({
+            "from":    from_addr,
+            "to":      [to_addr],
+            "subject": "Golden Knot — test email",
+            "text":    "This is a diagnostic test email from Golden Knot.",
+        }).encode("utf-8")
+        req = urllib.request.Request(
+            resend_url,
+            data=payload,
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type":  "application/json",
+            },
+            method="POST",
+        )
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            body = resp.read().decode()
+        return Response({"status": "ok", "resend_response": body, **info})
+    except urllib.error.HTTPError as exc:
+        error_body = exc.read().decode() if exc.fp else "(no body)"
+        return Response({"status": "error", "http_status": exc.code, "resend_error": error_body, **info},
+                        status=status.HTTP_200_OK)
+    except Exception as exc:
+        return Response({"status": "error", "exception": str(exc), **info},
+                        status=status.HTTP_200_OK)
 
 
 @api_view(["POST"])
