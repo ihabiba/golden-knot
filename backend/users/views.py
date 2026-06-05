@@ -259,7 +259,7 @@ def _build_reset_email_html(reset_url: str, username: str) -> str:
               Your password will not change.
             </p>
             <p style="margin:0;font-size:12px;color:#BBBAB5;line-height:1.6;">
-              Built with love by Habiba Hassan &mdash; Golden Knot &copy; {__import__('datetime').date.today().year}
+              &mdash; Golden Knot &copy; {__import__('datetime').date.today().year}
             </p>
           </td>
         </tr>
@@ -391,7 +391,7 @@ def contact_form(request):
             resend.api_key = django_settings.RESEND_API_KEY
             result = resend.Emails.send({
                 "from":     django_settings.DEFAULT_FROM_EMAIL,
-                "to":       ["zahidisok@gmail.com"],
+                "to":       ["itshabibahassan@gmail.com"],
                 "reply_to": [email],
                 "subject":  f"[Golden Knot Contact] {subject}",
                 "html":     html_body,
