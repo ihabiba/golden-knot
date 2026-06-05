@@ -147,6 +147,7 @@ function UsersSection() {
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<number | null>(null);
   const [roleFilter, setRoleFilter] = useState('all');
+  const [userSearch, setUserSearch] = useState('');
   const [roleChangeTarget, setRoleChangeTarget] = useState<{ user: User; newRole: UserRole } | null>(null);
   const [roleChanging, setRoleChanging] = useState(false);
   const [page, setPage] = useState(1);
@@ -158,9 +159,14 @@ function UsersSection() {
       .finally(() => setLoading(false));
   }, []);
 
-  const filtered = roleFilter === 'all' ? users : users.filter((u) => u.role === roleFilter);
+  const filtered = users.filter((u) => {
+    const matchesRole = roleFilter === 'all' || u.role === roleFilter;
+    const q = userSearch.toLowerCase();
+    const matchesSearch = !q || u.email.toLowerCase().includes(q) || u.username.toLowerCase().includes(q);
+    return matchesRole && matchesSearch;
+  });
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-  useEffect(() => setPage(1), [roleFilter]);
+  useEffect(() => setPage(1), [roleFilter, userSearch]);
 
   const toggleActive = async (user: User) => {
     setUpdatingId(user.id);
@@ -200,7 +206,14 @@ function UsersSection() {
     <div>
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <h2 className="font-display text-xl font-bold text-[#1C1C1C]">Users</h2>
-        <div className="flex gap-1.5">
+        <div className="flex items-center gap-2 flex-wrap">
+          <input
+            type="text"
+            value={userSearch}
+            onChange={(e) => setUserSearch(e.target.value)}
+            placeholder="Search by email or username…"
+            className="border border-gray-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-[#C9A84C] w-52"
+          />
           {(['all', 'customer', 'seller', 'admin'] as const).map((r) => (
             <button
               key={r}
