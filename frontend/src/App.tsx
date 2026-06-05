@@ -37,8 +37,8 @@ export default function App() {
       <ScrollToTop />
       <div className="flex flex-col min-h-screen">
         <Navbar />
-        <VerificationBanner />
         <div className="flex-1 pt-16">
+          <VerificationBanner />
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/products" element={<ProductsPage />} />

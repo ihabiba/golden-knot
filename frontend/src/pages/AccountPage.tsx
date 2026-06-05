@@ -5,10 +5,11 @@ import {
   User as UserIcon, Package, Heart, MapPin, Settings,
   Camera, Eye, EyeOff, ChevronRight, Loader2,
   Plus, Edit2, Trash2, Star, ShoppingCart, Check,
+  ShieldCheck, MailWarning,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useWishlist } from '../context/WishlistContext';
-import { updateUser, changePassword, deactivateUser } from '../api/users';
+import { updateUser, changePassword, deactivateUser, resendVerification } from '../api/users';
 import { getOrders } from '../api/orders';
 import { getAddresses, createAddress, updateAddress, deleteAddress, setDefaultAddress } from '../api/addresses';
 import { getWishlist } from '../api/wishlist';
@@ -43,7 +44,20 @@ function ProfileSection() {
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [resending, setResending] = useState(false);
   const avatarInputRef = useRef<HTMLInputElement>(null);
+
+  const handleResendVerification = async () => {
+    setResending(true);
+    try {
+      await resendVerification();
+      toast.success('Verification email sent! Check your inbox.');
+    } catch {
+      toast.error('Could not send email. Please try again later.');
+    } finally {
+      setResending(false);
+    }
+  };
 
   useEffect(() => {
     if (user) {
@@ -139,6 +153,26 @@ function ProfileSection() {
               }`}
             />
             {errors[field] && <p className="text-xs text-red-500 mt-1">{errors[field]}</p>}
+            {field === 'email' && (
+              user?.is_email_verified ? (
+                <p className="flex items-center gap-1.5 text-xs text-green-600 mt-1.5">
+                  <ShieldCheck size={13} /> Email verified
+                </p>
+              ) : (
+                <div className="flex items-center gap-2 mt-1.5">
+                  <p className="flex items-center gap-1.5 text-xs text-amber-600">
+                    <MailWarning size={13} /> Email not verified
+                  </p>
+                  <button
+                    onClick={handleResendVerification}
+                    disabled={resending}
+                    className="text-xs text-[#C9A84C] hover:underline disabled:opacity-50"
+                  >
+                    {resending ? 'Sending…' : 'Resend email'}
+                  </button>
+                </div>
+              )
+            )}
           </div>
         ))}
 
