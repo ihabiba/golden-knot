@@ -258,9 +258,8 @@ class UserViewSet(viewsets.ModelViewSet):
                 {"password": ["Incorrect password."]},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        user.is_active = False
-        user.save()
-        return Response({"detail": "Account deactivated."})
+        user.delete()
+        return Response({"detail": "Account deleted."})
 
     @action(detail=True, methods=["patch"])
     def activate(self, request, pk=None):

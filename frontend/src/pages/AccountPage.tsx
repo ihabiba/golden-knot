@@ -882,7 +882,7 @@ function SettingsSection() {
           <div className="relative bg-white rounded-2xl shadow-2xl max-w-md w-full p-8">
             <h3 className="font-display text-xl font-bold text-[#1C1C1C] mb-2">Delete Account</h3>
             <p className="text-gray-500 text-sm mb-6">
-              Enter your password to confirm. Your account will be deactivated immediately and all active sessions will end.
+              Enter your password to confirm. Your account will be permanently deleted and all active sessions will end.
             </p>
             <div className="mb-6">
               <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
@@ -925,7 +925,7 @@ function SettingsSection() {
                 className="flex-1 bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white font-semibold py-2.5 rounded-xl text-sm transition-colors flex items-center justify-center gap-2"
               >
                 {deleteLoading && <Loader2 size={14} className="animate-spin" />}
-                Deactivate My Account
+                Delete My Account
               </button>
             </div>
           </div>
