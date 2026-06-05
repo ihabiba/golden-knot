@@ -307,7 +307,7 @@ def password_reset_request(request):
                 "text":    text_body,
             }).encode("utf-8")
             req = urllib.request.Request(
-                "https://api.resend.com/emails",
+                "https://api.ap-northeast-1.resend.com/emails",
                 data=payload,
                 headers={
                     "Authorization": f"Bearer {django_settings.RESEND_API_KEY}",
@@ -405,7 +405,7 @@ def contact_form(request):
                 "text":     text_body,
             }).encode("utf-8")
             req = urllib.request.Request(
-                "https://api.resend.com/emails",
+                "https://api.ap-northeast-1.resend.com/emails",
                 data=payload,
                 headers={
                     "Authorization": f"Bearer {django_settings.RESEND_API_KEY}",
