@@ -596,6 +596,19 @@ All TypeScript interfaces in one file:
 - [x] Frontend: `AboutPage` — fixed `bg-gradient-to-br` → `bg-linear-to-br` (Tailwind v4 canonical class)
 - [x] `tsc --noEmit` → 0 errors
 
+### Done ✅ (admin analytics)
+- [x] Backend: `GET /api/users/admin-stats/` — admin-only endpoint returning revenue totals, monthly comparison, daily revenue/orders/users (last 30 days), order status breakdown, top 5 products by units sold, top 5 sellers by revenue, avg order value, email verification rate
+- [x] Frontend: `AdminStats` interface added to `types/index.ts`
+- [x] Frontend: `getAdminStats()` added to `api/users.ts`
+- [x] Frontend: `AdminDashboardPage` — all 5 stat cards now use `data.count` from paginated responses (was reading `data.results.length`, wrong at scale)
+- [x] Frontend: `AdminDashboardPage` — Revenue stat card now uses server-calculated total across all delivered orders
+- [x] Frontend: `AdminDashboardPage` — Revenue & Orders trend chart (ComposedChart, 30 days, dual Y-axis)
+- [x] Frontend: `AdminDashboardPage` — Order status donut chart (PieChart with inner label showing total)
+- [x] Frontend: `AdminDashboardPage` — Top Products table (name, units sold, revenue)
+- [x] Frontend: `AdminDashboardPage` — Top Sellers table (store name, orders, revenue)
+- [x] `recharts` installed (`npm install recharts`)
+- [x] `tsc --noEmit` → 0 errors
+
 ### Post-Presentation / Pending
 - [ ] **Email to all recipients** — verify `goldenknot.store` on Resend → update `DEFAULT_FROM_EMAIL=Golden Knot <noreply@goldenknot.store>` in Render
 - [ ] **Contact form** — currently cosmetic (no real email sent); wire to backend endpoint when needed
