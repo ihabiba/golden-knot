@@ -1433,7 +1433,6 @@ export default function AdminDashboardPage() {
   const navigate = useNavigate();
   const [section, setSection] = useState('overview');
 
-  const [users, setUsers] = useState<User[]>([]);
   const [sellers, setSellers] = useState<SellerProfile[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
@@ -1449,7 +1448,6 @@ export default function AdminDashboardPage() {
     Promise.all([
       getUsers(), getAllSellers(), getProducts(), getOrders(), getAdminStats(),
     ]).then(([u, s, p, o, st]) => {
-      setUsers(u.data.results);
       setUserCount(u.data.count);
       setSellers(s.data.results);
       setSellerCount(s.data.count);
