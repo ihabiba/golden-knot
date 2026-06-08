@@ -1,5 +1,5 @@
 import api from './client';
-import type { User, PaginatedResponse } from '../types';
+import type { User, PaginatedResponse, AdminStats } from '../types';
 
 export const getUsers = (params?: Record<string, string | number>) =>
   api.get<PaginatedResponse<User>>('/users/', { params });
@@ -20,3 +20,6 @@ export const activateUser = (id: number) =>
 
 export const resendVerification = () =>
   api.post<{ detail: string }>('/users/resend-verification/');
+
+export const getAdminStats = () =>
+  api.get<AdminStats>('/users/admin-stats/');

@@ -1,4 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import {
+  ComposedChart, Area, Bar, XAxis, YAxis, CartesianGrid,
+  Tooltip, ResponsiveContainer, PieChart, Pie, Cell,
+} from 'recharts';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
@@ -7,7 +11,7 @@ import {
   DollarSign,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { getUsers, updateUser, deactivateUser, activateUser } from '../api/users';
+import { getUsers, updateUser, deactivateUser, activateUser, getAdminStats } from '../api/users';
 import { getAllSellers, approveSellerProfile, rejectSellerProfile } from '../api/store';
 import { getProducts, approveProduct, rejectProduct } from '../api/products';
 import { getOrders, updateOrderStatus } from '../api/orders';
@@ -17,7 +21,7 @@ import DashboardLayout from '../components/DashboardLayout';
 import StatCard from '../components/StatCard';
 import StatusBadge from '../components/StatusBadge';
 import ConfirmModal from '../components/ConfirmModal';
-import type { User, UserRole, SellerProfile, Product, Order, PromoCode } from '../types';
+import type { User, UserRole, SellerProfile, Product, Order, PromoCode, AdminStats } from '../types';
 
 const NAV_ITEMS = [
   { key: 'overview',    label: 'Overview',    icon: <LayoutDashboard size={15} /> },
@@ -62,32 +66,79 @@ function Paginator({ page, total, onChange }: { page: number; total: number; onC
 
 // ─── Overview ─────────────────────────────────────────────────────────────────
 
+const STATUS_COLORS: Record<string, string> = {
+  pending:    '#f59e0b',
+  confirmed:  '#3b82f6',
+  processing: '#8b5cf6',
+  shipped:    '#06b6d4',
+  delivered:  '#22c55e',
+  cancelled:  '#ef4444',
+  refunded:   '#6b7280',
+};
+
 function OverviewSection({
   users, sellers, products, orders,
+  userCount, sellerCount, productCount, orderCount, stats,
 }: {
   users: User[];
   sellers: SellerProfile[];
   products: Product[];
   orders: Order[];
+  userCount: number;
+  sellerCount: number;
+  productCount: number;
+  orderCount: number;
+  stats: AdminStats | null;
 }) {
-  const totalRevenue = orders
-    .filter((o) => o.status === 'delivered')
-    .reduce((s, o) => s + parseFloat(o.total_price), 0);
-
   const pendingSellers  = sellers.filter((s) => s.status === 'pending').length;
   const pendingProducts = products.filter((p) => !p.is_approved).length;
 
+  const trendData = useMemo(() => {
+    if (!stats) return [];
+    const rm: Record<string, number> = {};
+    const om: Record<string, number> = {};
+    stats.revenue_last_30_days.forEach((d) => { rm[d.date] = d.revenue; });
+    stats.orders_last_30_days.forEach((d) => { om[d.date] = d.count; });
+    return Array.from({ length: 30 }, (_, i) => {
+      const dt = new Date();
+      dt.setDate(dt.getDate() - (29 - i));
+      const key = dt.toISOString().slice(0, 10);
+      return {
+        label: dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        revenue: rm[key] ?? 0,
+        orders:  om[key] ?? 0,
+      };
+    });
+  }, [stats]);
+
+  const donutData = useMemo(
+    () =>
+      stats
+        ? Object.entries(stats.orders_by_status)
+            .filter(([, v]) => v > 0)
+            .map(([name, value]) => ({ name, value }))
+        : [],
+    [stats],
+  );
+  const donutTotal = donutData.reduce((s, d) => s + d.value, 0);
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
+      {/* ── Stat cards ──────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-        <StatCard icon={<Users size={18} />} value={users.length} label="Total Users" />
-        <StatCard icon={<Store size={18} />} value={sellers.length} label="Sellers" iconColor="#8b5cf6" />
-        <StatCard icon={<Package size={18} />} value={products.length} label="Products" iconColor="#3b82f6" />
-        <StatCard icon={<ShoppingBag size={18} />} value={orders.length} label="Orders" iconColor="#f59e0b" />
-        <StatCard icon={<DollarSign size={18} />} value={`$${totalRevenue.toFixed(0)}`} label="Revenue" iconColor="#22c55e" />
+        <StatCard icon={<Users size={18} />} value={userCount || '—'} label="Total Users" />
+        <StatCard icon={<Store size={18} />} value={sellerCount || '—'} label="Sellers" iconColor="#8b5cf6" />
+        <StatCard icon={<Package size={18} />} value={productCount || '—'} label="Products" iconColor="#3b82f6" />
+        <StatCard icon={<ShoppingBag size={18} />} value={orderCount || '—'} label="Orders" iconColor="#f59e0b" />
+        <StatCard
+          icon={<DollarSign size={18} />}
+          value={stats ? `$${stats.revenue_total.toLocaleString('en-US', { maximumFractionDigits: 0 })}` : '—'}
+          label="Revenue"
+          iconColor="#22c55e"
+        />
       </div>
 
-      {/* Pending approvals */}
+      {/* ── Pending approvals ───────────────────────────────────────────────── */}
       {(pendingSellers > 0 || pendingProducts > 0) && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-5">
           <h3 className="font-semibold text-sm text-yellow-900 mb-3">Pending Approvals</h3>
@@ -96,7 +147,8 @@ function OverviewSection({
               <div className="bg-white rounded-xl border border-yellow-200 px-4 py-2.5 flex items-center gap-2">
                 <Store size={14} className="text-yellow-600" />
                 <p className="text-sm font-medium text-yellow-800">
-                  <span className="text-lg font-bold mr-1">{pendingSellers}</span>seller{pendingSellers !== 1 ? 's' : ''} awaiting approval
+                  <span className="text-lg font-bold mr-1">{pendingSellers}</span>
+                  seller{pendingSellers !== 1 ? 's' : ''} awaiting approval
                 </p>
               </div>
             )}
@@ -104,7 +156,8 @@ function OverviewSection({
               <div className="bg-white rounded-xl border border-yellow-200 px-4 py-2.5 flex items-center gap-2">
                 <Package size={14} className="text-yellow-600" />
                 <p className="text-sm font-medium text-yellow-800">
-                  <span className="text-lg font-bold mr-1">{pendingProducts}</span>product{pendingProducts !== 1 ? 's' : ''} awaiting review
+                  <span className="text-lg font-bold mr-1">{pendingProducts}</span>
+                  product{pendingProducts !== 1 ? 's' : ''} awaiting review
                 </p>
               </div>
             )}
@@ -112,7 +165,232 @@ function OverviewSection({
         </div>
       )}
 
-      {/* Recent orders */}
+      {/* ── Charts ──────────────────────────────────────────────────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Trend chart */}
+        <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-100 p-5">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-semibold text-sm text-[#1C1C1C]">Revenue &amp; Orders — Last 30 Days</h3>
+            <div className="flex items-center gap-3 text-[11px] text-gray-400">
+              <span className="flex items-center gap-1.5">
+                <span className="inline-block w-3 h-0.5 rounded bg-[#C9A84C]" />Revenue
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="inline-block w-3 h-2.5 rounded-sm bg-blue-300" />Orders
+              </span>
+            </div>
+          </div>
+          {!stats ? (
+            <div className="h-52 flex items-center justify-center">
+              <Loader2 size={20} className="animate-spin text-[#C9A84C]" />
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height={208}>
+              <ComposedChart data={trendData} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#F0EFEC" vertical={false} />
+                <XAxis
+                  dataKey="label"
+                  tick={{ fontSize: 10, fill: '#9ca3af' }}
+                  tickLine={false}
+                  axisLine={false}
+                  interval={6}
+                />
+                <YAxis
+                  yAxisId="rev"
+                  tick={{ fontSize: 10, fill: '#9ca3af' }}
+                  tickLine={false}
+                  axisLine={false}
+                  tickFormatter={(v: number) =>
+                    v >= 1000 ? `$${(v / 1000).toFixed(0)}k` : `$${v}`
+                  }
+                  width={42}
+                />
+                <YAxis
+                  yAxisId="ord"
+                  orientation="right"
+                  tick={{ fontSize: 10, fill: '#9ca3af' }}
+                  tickLine={false}
+                  axisLine={false}
+                  width={24}
+                  allowDecimals={false}
+                />
+                <Tooltip
+                  contentStyle={{
+                    background: '#1C1C1C', border: 'none',
+                    borderRadius: 8, fontSize: 12, color: '#F5F0E8',
+                  }}
+                  formatter={(value, name) => [
+                    name === 'revenue' ? `$${Number(value).toFixed(2)}` : String(value),
+                    name === 'revenue' ? 'Revenue' : 'Orders',
+                  ]}
+                />
+                <Area
+                  yAxisId="rev"
+                  type="monotone"
+                  dataKey="revenue"
+                  stroke="#C9A84C"
+                  fill="#C9A84C"
+                  fillOpacity={0.12}
+                  strokeWidth={2}
+                  dot={false}
+                />
+                <Bar
+                  yAxisId="ord"
+                  dataKey="orders"
+                  fill="#93c5fd"
+                  radius={[2, 2, 0, 0]}
+                  barSize={6}
+                />
+              </ComposedChart>
+            </ResponsiveContainer>
+          )}
+        </div>
+
+        {/* Status donut */}
+        <div className="bg-white rounded-2xl border border-gray-100 p-5">
+          <h3 className="font-semibold text-sm text-[#1C1C1C] mb-4">Order Status</h3>
+          {!stats ? (
+            <div className="h-52 flex items-center justify-center">
+              <Loader2 size={20} className="animate-spin text-[#C9A84C]" />
+            </div>
+          ) : donutTotal === 0 ? (
+            <div className="h-52 flex items-center justify-center text-sm text-gray-400">
+              No orders yet
+            </div>
+          ) : (
+            <div className="flex flex-col items-center gap-3">
+              <div className="relative" style={{ width: 160, height: 160 }}>
+                <PieChart width={160} height={160}>
+                  <Pie
+                    data={donutData}
+                    cx={75}
+                    cy={75}
+                    innerRadius={50}
+                    outerRadius={72}
+                    paddingAngle={2}
+                    dataKey="value"
+                    strokeWidth={0}
+                  >
+                    {donutData.map((entry, idx) => (
+                      <Cell
+                        key={`cell-${idx}`}
+                        fill={STATUS_COLORS[entry.name] ?? '#9ca3af'}
+                      />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{
+                      background: '#1C1C1C', border: 'none',
+                      borderRadius: 8, fontSize: 11, color: '#F5F0E8',
+                    }}
+                    formatter={(value, name) => [
+                      String(value),
+                      String(name).charAt(0).toUpperCase() + String(name).slice(1),
+                    ]}
+                  />
+                </PieChart>
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                  <span className="text-2xl font-bold text-[#1C1C1C]">{donutTotal}</span>
+                  <span className="text-[11px] text-gray-400">orders</span>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 w-full">
+                {donutData.map((d) => (
+                  <div key={d.name} className="flex items-center gap-1.5">
+                    <span
+                      className="w-2 h-2 rounded-full shrink-0"
+                      style={{ background: STATUS_COLORS[d.name] ?? '#9ca3af' }}
+                    />
+                    <span className="text-xs text-gray-500 capitalize">{d.name}</span>
+                    <span className="text-xs font-semibold text-[#1C1C1C] ml-auto">{d.value}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ── Analytics tables ─────────────────────────────────────────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Top products */}
+        <div className="bg-white rounded-2xl border border-gray-100 p-5">
+          <h3 className="font-semibold text-sm text-[#1C1C1C] mb-4">Top Products</h3>
+          {!stats ? (
+            <div className="h-28 flex items-center justify-center">
+              <Loader2 size={20} className="animate-spin text-[#C9A84C]" />
+            </div>
+          ) : stats.top_products.length === 0 ? (
+            <p className="text-sm text-gray-400 py-4 text-center">No sales data yet.</p>
+          ) : (
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b border-gray-100">
+                  <th className="text-left pb-2.5 font-semibold text-gray-400 uppercase tracking-wide">Product</th>
+                  <th className="text-right pb-2.5 font-semibold text-gray-400 uppercase tracking-wide">Units</th>
+                  <th className="text-right pb-2.5 font-semibold text-gray-400 uppercase tracking-wide">Revenue</th>
+                </tr>
+              </thead>
+              <tbody>
+                {stats.top_products.map((p, i) => (
+                  <tr key={i} className="border-b border-gray-50 last:border-0">
+                    <td className="py-2.5">
+                      <div className="flex items-center gap-1">
+                        <span className="text-gray-300 shrink-0">{i + 1}.</span>
+                        <span className="font-medium text-[#1C1C1C] line-clamp-1">{p.name}</span>
+                      </div>
+                    </td>
+                    <td className="py-2.5 text-right text-gray-600">{p.units_sold}</td>
+                    <td className="py-2.5 text-right font-semibold text-[#1C1C1C]">
+                      ${p.revenue.toLocaleString('en-US', { maximumFractionDigits: 0 })}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+
+        {/* Top sellers */}
+        <div className="bg-white rounded-2xl border border-gray-100 p-5">
+          <h3 className="font-semibold text-sm text-[#1C1C1C] mb-4">Top Sellers</h3>
+          {!stats ? (
+            <div className="h-28 flex items-center justify-center">
+              <Loader2 size={20} className="animate-spin text-[#C9A84C]" />
+            </div>
+          ) : stats.top_sellers.length === 0 ? (
+            <p className="text-sm text-gray-400 py-4 text-center">No sales data yet.</p>
+          ) : (
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b border-gray-100">
+                  <th className="text-left pb-2.5 font-semibold text-gray-400 uppercase tracking-wide">Store</th>
+                  <th className="text-right pb-2.5 font-semibold text-gray-400 uppercase tracking-wide">Orders</th>
+                  <th className="text-right pb-2.5 font-semibold text-gray-400 uppercase tracking-wide">Revenue</th>
+                </tr>
+              </thead>
+              <tbody>
+                {stats.top_sellers.map((s, i) => (
+                  <tr key={i} className="border-b border-gray-50 last:border-0">
+                    <td className="py-2.5">
+                      <div className="flex items-center gap-1">
+                        <span className="text-gray-300 shrink-0">{i + 1}.</span>
+                        <span className="font-medium text-[#1C1C1C]">{s.store_name}</span>
+                      </div>
+                    </td>
+                    <td className="py-2.5 text-right text-gray-600">{s.orders}</td>
+                    <td className="py-2.5 text-right font-semibold text-[#1C1C1C]">
+                      ${s.revenue.toLocaleString('en-US', { maximumFractionDigits: 0 })}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </div>
+
+      {/* ── Recent orders ────────────────────────────────────────────────────── */}
       <div className="bg-white rounded-2xl border border-gray-100 p-5">
         <h3 className="font-semibold text-sm text-[#1C1C1C] mb-4">Recent Orders</h3>
         {orders.length === 0 ? (
@@ -1153,17 +1431,27 @@ export default function AdminDashboardPage() {
   const [sellers, setSellers] = useState<SellerProfile[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [userCount, setUserCount] = useState(0);
+  const [sellerCount, setSellerCount] = useState(0);
+  const [productCount, setProductCount] = useState(0);
+  const [orderCount, setOrderCount] = useState(0);
+  const [stats, setStats] = useState<AdminStats | null>(null);
 
   useEffect(() => {
     if (!isAuthenticated) { navigate('/login', { replace: true }); return; }
     if (user && user.role !== 'admin') { navigate('/', { replace: true }); return; }
     Promise.all([
-      getUsers(), getAllSellers(), getProducts(), getOrders(),
-    ]).then(([u, s, p, o]) => {
+      getUsers(), getAllSellers(), getProducts(), getOrders(), getAdminStats(),
+    ]).then(([u, s, p, o, st]) => {
       setUsers(u.data.results);
+      setUserCount(u.data.count);
       setSellers(s.data.results);
+      setSellerCount(s.data.count);
       setProducts(p.data.results);
+      setProductCount(p.data.count);
       setOrders(o.data.results);
+      setOrderCount(o.data.count);
+      setStats(st.data);
     }).catch(() => {});
   }, [isAuthenticated, user, navigate]);
 
@@ -1177,7 +1465,14 @@ export default function AdminDashboardPage() {
       activeSection={section}
       onSectionChange={setSection}
     >
-      {section === 'overview'    && <OverviewSection users={users} sellers={sellers} products={products} orders={orders} />}
+      {section === 'overview'    && (
+        <OverviewSection
+          users={users} sellers={sellers} products={products} orders={orders}
+          userCount={userCount} sellerCount={sellerCount}
+          productCount={productCount} orderCount={orderCount}
+          stats={stats}
+        />
+      )}
       {section === 'users'       && <UsersSection />}
       {section === 'sellers'     && <SellersSection />}
       {section === 'products'    && <AdminProductsSection />}

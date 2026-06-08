@@ -245,6 +245,22 @@ export interface Notification {
   created_at: string;
 }
 
+// ─── Admin Analytics ─────────────────────────────────────────────────────────
+
+export interface AdminStats {
+  revenue_total: number;
+  revenue_this_month: number;
+  revenue_last_month: number;
+  orders_by_status: Record<string, number>;
+  revenue_last_30_days: { date: string; revenue: number }[];
+  orders_last_30_days: { date: string; count: number }[];
+  users_last_30_days: { date: string; count: number }[];
+  top_products: { name: string; units_sold: number; revenue: number }[];
+  top_sellers: { store_name: string; orders: number; revenue: number }[];
+  avg_order_value: number;
+  email_verification_rate: number;
+}
+
 // ─── API Pagination ──────────────────────────────────────────────────────────
 
 export interface PaginatedResponse<T> {

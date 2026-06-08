@@ -431,6 +431,130 @@ def resend_verification(request):
     return Response({"detail": "Verification email sent."})
 
 
+@api_view(["GET"])
+@drf_permission_classes([permissions.IsAuthenticated])
+def admin_stats(request):
+    if request.user.role != "admin":
+        return Response({"detail": "Forbidden."}, status=status.HTTP_403_FORBIDDEN)
+
+    from django.db.models import Sum, Count, Avg, F, ExpressionWrapper, DecimalField
+    from django.db.models.functions import TruncDay
+    from django.utils import timezone
+    from datetime import timedelta
+    from orders.models import Order, OrderItem
+    from store.models import SellerProfile
+
+    now = timezone.now()
+    thirty_days_ago = now - timedelta(days=30)
+    this_month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    last_month_start = (this_month_start - timedelta(days=1)).replace(
+        day=1, hour=0, minute=0, second=0, microsecond=0
+    )
+
+    item_revenue = ExpressionWrapper(F("quantity") * F("unit_price"), output_field=DecimalField())
+
+    delivered = Order.objects.filter(status="delivered")
+    revenue_total = float(delivered.aggregate(t=Sum("total_price"))["t"] or 0)
+    revenue_this_month = float(
+        delivered.filter(created_at__gte=this_month_start).aggregate(t=Sum("total_price"))["t"] or 0
+    )
+    revenue_last_month = float(
+        delivered.filter(created_at__gte=last_month_start, created_at__lt=this_month_start)
+        .aggregate(t=Sum("total_price"))["t"] or 0
+    )
+
+    orders_by_status = {
+        row["status"]: row["c"]
+        for row in Order.objects.values("status").annotate(c=Count("id"))
+    }
+
+    revenue_daily = list(
+        delivered.filter(created_at__gte=thirty_days_ago)
+        .annotate(date=TruncDay("created_at"))
+        .values("date")
+        .annotate(revenue=Sum("total_price"))
+        .order_by("date")
+    )
+
+    orders_daily = list(
+        Order.objects.filter(created_at__gte=thirty_days_ago)
+        .annotate(date=TruncDay("created_at"))
+        .values("date")
+        .annotate(count=Count("id"))
+        .order_by("date")
+    )
+
+    users_daily = list(
+        User.objects.filter(created_at__gte=thirty_days_ago)
+        .annotate(date=TruncDay("created_at"))
+        .values("date")
+        .annotate(count=Count("id"))
+        .order_by("date")
+    )
+
+    top_products_raw = list(
+        OrderItem.objects
+        .values("product__name")
+        .annotate(units_sold=Sum("quantity"), revenue=Sum(item_revenue))
+        .order_by("-units_sold")[:5]
+    )
+
+    top_sellers_raw = list(
+        OrderItem.objects
+        .filter(order__status="delivered")
+        .values("seller_id", "seller__username")
+        .annotate(orders=Count("order", distinct=True), revenue=Sum(item_revenue))
+        .order_by("-revenue")[:5]
+    )
+    seller_ids = [s["seller_id"] for s in top_sellers_raw]
+    store_name_map = {
+        sp.user_id: sp.store_name
+        for sp in SellerProfile.objects.filter(user_id__in=seller_ids)
+    }
+
+    avg_order_value = float(Order.objects.aggregate(avg=Avg("total_price"))["avg"] or 0)
+    total_users = User.objects.count()
+    verified_users = User.objects.filter(is_email_verified=True).count()
+    email_verification_rate = round(verified_users / total_users * 100, 1) if total_users else 0.0
+
+    return Response({
+        "revenue_total": revenue_total,
+        "revenue_this_month": revenue_this_month,
+        "revenue_last_month": revenue_last_month,
+        "orders_by_status": orders_by_status,
+        "revenue_last_30_days": [
+            {"date": item["date"].strftime("%Y-%m-%d"), "revenue": float(item["revenue"])}
+            for item in revenue_daily
+        ],
+        "orders_last_30_days": [
+            {"date": item["date"].strftime("%Y-%m-%d"), "count": item["count"]}
+            for item in orders_daily
+        ],
+        "users_last_30_days": [
+            {"date": item["date"].strftime("%Y-%m-%d"), "count": item["count"]}
+            for item in users_daily
+        ],
+        "top_products": [
+            {
+                "name": item["product__name"],
+                "units_sold": item["units_sold"],
+                "revenue": float(item["revenue"] or 0),
+            }
+            for item in top_products_raw
+        ],
+        "top_sellers": [
+            {
+                "store_name": store_name_map.get(s["seller_id"]) or s["seller__username"],
+                "orders": s["orders"],
+                "revenue": float(s["revenue"] or 0),
+            }
+            for s in top_sellers_raw
+        ],
+        "avg_order_value": avg_order_value,
+        "email_verification_rate": email_verification_rate,
+    })
+
+
 @api_view(["POST"])
 @drf_permission_classes([AllowAny])
 def contact_form(request):

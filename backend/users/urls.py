@@ -5,6 +5,7 @@ from .views import (
     password_reset_request, password_reset_confirm,
     contact_form, test_email,
     verify_email, resend_verification,
+    admin_stats,
 )
 
 router = DefaultRouter()
@@ -18,5 +19,6 @@ urlpatterns = [
     path("test-email/", test_email, name="test-email"),
     path("verify-email/<str:token>/", verify_email, name="verify-email"),
     path("resend-verification/", resend_verification, name="resend-verification"),
+    path("admin-stats/", admin_stats, name="admin-stats"),
     path("", include(router.urls)),
 ]
