@@ -421,6 +421,7 @@ function OverviewSection({
 
 function UsersSection() {
   const [users, setUsers] = useState<User[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<number | null>(null);
   const [roleFilter, setRoleFilter] = useState('all');
@@ -436,20 +437,22 @@ function UsersSection() {
     return () => clearTimeout(t);
   }, [userSearch]);
 
-  // Re-fetch whenever the debounced search or role filter changes (both server-side)
+  // Reset to page 1 when filters change
+  useEffect(() => setPage(1), [roleFilter, debouncedSearch]);
+
+  // Re-fetch from server on every filter/page change
   useEffect(() => {
     setLoading(true);
-    const params: Record<string, string> = {};
+    const params: Record<string, string | number> = { page };
     if (debouncedSearch.trim()) params.search = debouncedSearch.trim();
     if (roleFilter !== 'all') params.role = roleFilter;
     getUsers(params)
-      .then(({ data }) => setUsers(data.results))
+      .then(({ data }) => { setUsers(data.results); setTotalCount(data.count); })
       .catch(() => toast.error('Failed to load users.'))
       .finally(() => setLoading(false));
-  }, [debouncedSearch, roleFilter]);
+  }, [debouncedSearch, roleFilter, page]);
 
-  const paginated = users.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-  useEffect(() => setPage(1), [roleFilter, debouncedSearch]);
+  const paginated = users;
 
   const toggleActive = async (user: User) => {
     setUpdatingId(user.id);
@@ -577,7 +580,7 @@ function UsersSection() {
               </tbody>
             </table>
           </div>
-          <Paginator page={page} total={users.length} onChange={setPage} />
+          <Paginator page={page} total={totalCount} onChange={setPage} />
         </div>
       )}
 
