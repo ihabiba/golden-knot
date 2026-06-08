@@ -436,20 +436,19 @@ function UsersSection() {
     return () => clearTimeout(t);
   }, [userSearch]);
 
-  // Re-fetch whenever the debounced search changes (server-side search)
+  // Re-fetch whenever the debounced search or role filter changes (both server-side)
   useEffect(() => {
     setLoading(true);
     const params: Record<string, string> = {};
     if (debouncedSearch.trim()) params.search = debouncedSearch.trim();
+    if (roleFilter !== 'all') params.role = roleFilter;
     getUsers(params)
       .then(({ data }) => setUsers(data.results))
       .catch(() => toast.error('Failed to load users.'))
       .finally(() => setLoading(false));
-  }, [debouncedSearch]);
+  }, [debouncedSearch, roleFilter]);
 
-  // Role filter is still applied client-side on the server-returned results
-  const filtered = roleFilter === 'all' ? users : users.filter((u) => u.role === roleFilter);
-  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const paginated = users.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
   useEffect(() => setPage(1), [roleFilter, debouncedSearch]);
 
   const toggleActive = async (user: User) => {
@@ -578,7 +577,7 @@ function UsersSection() {
               </tbody>
             </table>
           </div>
-          <Paginator page={page} total={filtered.length} onChange={setPage} />
+          <Paginator page={page} total={users.length} onChange={setPage} />
         </div>
       )}
 

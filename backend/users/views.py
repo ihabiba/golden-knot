@@ -195,7 +195,11 @@ class UserViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         if self.request.user.role == "admin":
-            return User.objects.all()
+            qs = User.objects.all()
+            role = self.request.query_params.get("role")
+            if role in ("customer", "seller", "admin"):
+                qs = qs.filter(role=role)
+            return qs
         return User.objects.filter(pk=self.request.user.pk)
 
     def update(self, request, *args, **kwargs):
