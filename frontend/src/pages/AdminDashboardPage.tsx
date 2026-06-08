@@ -77,10 +77,9 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 function OverviewSection({
-  users, sellers, products, orders,
+  sellers, products, orders,
   userCount, sellerCount, productCount, orderCount, stats,
 }: {
-  users: User[];
   sellers: SellerProfile[];
   products: Product[];
   orders: Order[];
@@ -426,25 +425,32 @@ function UsersSection() {
   const [updatingId, setUpdatingId] = useState<number | null>(null);
   const [roleFilter, setRoleFilter] = useState('all');
   const [userSearch, setUserSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [roleChangeTarget, setRoleChangeTarget] = useState<{ user: User; newRole: UserRole } | null>(null);
   const [roleChanging, setRoleChanging] = useState(false);
   const [page, setPage] = useState(1);
 
+  // Debounce the search input — wait 350ms before hitting the server
   useEffect(() => {
-    getUsers()
+    const t = setTimeout(() => setDebouncedSearch(userSearch), 350);
+    return () => clearTimeout(t);
+  }, [userSearch]);
+
+  // Re-fetch whenever the debounced search changes (server-side search)
+  useEffect(() => {
+    setLoading(true);
+    const params: Record<string, string> = {};
+    if (debouncedSearch.trim()) params.search = debouncedSearch.trim();
+    getUsers(params)
       .then(({ data }) => setUsers(data.results))
       .catch(() => toast.error('Failed to load users.'))
       .finally(() => setLoading(false));
-  }, []);
+  }, [debouncedSearch]);
 
-  const filtered = users.filter((u) => {
-    const matchesRole = roleFilter === 'all' || u.role === roleFilter;
-    const q = userSearch.toLowerCase();
-    const matchesSearch = !q || u.email.toLowerCase().includes(q) || u.username.toLowerCase().includes(q);
-    return matchesRole && matchesSearch;
-  });
+  // Role filter is still applied client-side on the server-returned results
+  const filtered = roleFilter === 'all' ? users : users.filter((u) => u.role === roleFilter);
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-  useEffect(() => setPage(1), [roleFilter, userSearch]);
+  useEffect(() => setPage(1), [roleFilter, debouncedSearch]);
 
   const toggleActive = async (user: User) => {
     setUpdatingId(user.id);
@@ -1467,7 +1473,7 @@ export default function AdminDashboardPage() {
     >
       {section === 'overview'    && (
         <OverviewSection
-          users={users} sellers={sellers} products={products} orders={orders}
+          sellers={sellers} products={products} orders={orders}
           userCount={userCount} sellerCount={sellerCount}
           productCount={productCount} orderCount={orderCount}
           stats={stats}

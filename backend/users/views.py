@@ -9,7 +9,7 @@ import resend
 
 logger = logging.getLogger(__name__)
 
-from rest_framework import viewsets, generics, permissions, status
+from rest_framework import viewsets, generics, permissions, status, filters
 from rest_framework.decorators import action, api_view, permission_classes as drf_permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -190,6 +190,8 @@ class RegisterView(generics.CreateAPIView):
 class UserViewSet(viewsets.ModelViewSet):
     serializer_class = UserSerializer
     permission_classes = [permissions.IsAuthenticated]
+    filter_backends = [filters.SearchFilter]
+    search_fields = ["email", "username"]
 
     def get_queryset(self):
         if self.request.user.role == "admin":
