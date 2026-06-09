@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
   LayoutDashboard, Users, Store, Package, ShoppingBag, Tag,
-  CheckCircle2, XCircle, ChevronDown, Loader2, Plus, Pencil, Trash2, X,
+  CheckCircle2, XCircle, ChevronDown, ChevronRight, Loader2, Plus, Pencil, Trash2, X,
   DollarSign,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -78,7 +78,7 @@ const STATUS_COLORS: Record<string, string> = {
 
 function OverviewSection({
   sellers, products, orders,
-  userCount, sellerCount, productCount, orderCount, stats,
+  userCount, sellerCount, productCount, orderCount, stats, onNavigate,
 }: {
   sellers: SellerProfile[];
   products: Product[];
@@ -88,6 +88,7 @@ function OverviewSection({
   productCount: number;
   orderCount: number;
   stats: AdminStats | null;
+  onNavigate: (section: string) => void;
 }) {
   const pendingSellers  = sellers.filter((s) => s.status === 'pending').length;
   const pendingProducts = products.filter((p) => !p.is_approved).length;
@@ -143,22 +144,30 @@ function OverviewSection({
           <h3 className="font-semibold text-sm text-yellow-900 mb-3">Pending Approvals</h3>
           <div className="flex flex-wrap gap-3">
             {pendingSellers > 0 && (
-              <div className="bg-white rounded-xl border border-yellow-200 px-4 py-2.5 flex items-center gap-2">
+              <button
+                onClick={() => onNavigate('sellers')}
+                className="bg-white rounded-xl border border-yellow-200 px-4 py-2.5 flex items-center gap-2 hover:border-yellow-400 hover:shadow-sm transition-all group"
+              >
                 <Store size={14} className="text-yellow-600" />
                 <p className="text-sm font-medium text-yellow-800">
                   <span className="text-lg font-bold mr-1">{pendingSellers}</span>
                   seller{pendingSellers !== 1 ? 's' : ''} awaiting approval
                 </p>
-              </div>
+                <ChevronRight size={14} className="text-yellow-400 group-hover:text-yellow-600 ml-1 transition-colors" />
+              </button>
             )}
             {pendingProducts > 0 && (
-              <div className="bg-white rounded-xl border border-yellow-200 px-4 py-2.5 flex items-center gap-2">
+              <button
+                onClick={() => onNavigate('products')}
+                className="bg-white rounded-xl border border-yellow-200 px-4 py-2.5 flex items-center gap-2 hover:border-yellow-400 hover:shadow-sm transition-all group"
+              >
                 <Package size={14} className="text-yellow-600" />
                 <p className="text-sm font-medium text-yellow-800">
                   <span className="text-lg font-bold mr-1">{pendingProducts}</span>
                   product{pendingProducts !== 1 ? 's' : ''} awaiting review
                 </p>
-              </div>
+                <ChevronRight size={14} className="text-yellow-400 group-hover:text-yellow-600 ml-1 transition-colors" />
+              </button>
             )}
           </div>
         </div>
@@ -390,26 +399,62 @@ function OverviewSection({
       </div>
 
       {/* ── Recent orders ────────────────────────────────────────────────────── */}
-      <div className="bg-white rounded-2xl border border-gray-100 p-5">
-        <h3 className="font-semibold text-sm text-[#1C1C1C] mb-4">Recent Orders</h3>
+      <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+          <h3 className="font-semibold text-sm text-[#1C1C1C]">Recent Orders</h3>
+          <button
+            onClick={() => onNavigate('orders')}
+            className="text-xs text-[#C9A84C] hover:underline font-medium flex items-center gap-1"
+          >
+            View all <ChevronRight size={12} />
+          </button>
+        </div>
         {orders.length === 0 ? (
-          <p className="text-sm text-gray-400 py-4 text-center">No orders yet.</p>
+          <p className="text-sm text-gray-400 py-8 text-center">No orders yet.</p>
         ) : (
-          <div className="space-y-2">
-            {orders.slice(0, 8).map((order) => (
-              <div key={order.id} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
-                <div className="flex items-center gap-3">
-                  <p className="text-xs font-semibold text-[#1C1C1C]">#{order.id}</p>
-                  <StatusBadge status={order.status} size="sm" />
-                </div>
-                <div className="flex items-center gap-4">
-                  <p className="text-xs text-gray-400 hidden sm:block">
-                    {new Date(order.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
-                  </p>
-                  <p className="text-xs font-semibold text-[#1C1C1C]">${parseFloat(order.total_price).toFixed(2)}</p>
-                </div>
-              </div>
-            ))}
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-[#FAFAF8] border-b border-gray-100">
+                  <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Customer</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide hidden md:table-cell">Items</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Total</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[...orders]
+                  .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+                  .slice(0, 10)
+                  .map((order) => (
+                  <tr
+                    key={order.id}
+                    onClick={() => onNavigate('orders')}
+                    className="border-b border-gray-50 last:border-0 hover:bg-gray-50/50 cursor-pointer"
+                  >
+                    <td className="px-5 py-3.5">
+                      <p className="font-medium text-[#1C1C1C] text-sm">{order.customer_username ?? `User #${order.customer}`}</p>
+                      <p className="text-xs text-gray-400">
+                        {new Date(order.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      </p>
+                    </td>
+                    <td className="px-4 py-3.5 hidden md:table-cell">
+                      <p className="text-xs text-gray-700 line-clamp-1">
+                        {order.items[0]?.product_name ?? '—'}
+                        {order.items.length > 1 ? ` +${order.items.length - 1}` : ''}
+                      </p>
+                      <p className="text-xs text-gray-400">{order.items.length} item{order.items.length !== 1 ? 's' : ''}</p>
+                    </td>
+                    <td className="px-4 py-3.5 font-semibold text-[#1C1C1C] text-sm">
+                      ${parseFloat(order.total_price).toFixed(2)}
+                    </td>
+                    <td className="px-4 py-3.5">
+                      <StatusBadge status={order.status} size="sm" />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </div>
@@ -1897,6 +1942,7 @@ export default function AdminDashboardPage() {
           userCount={userCount} sellerCount={sellerCount}
           productCount={productCount} orderCount={orderCount}
           stats={stats}
+          onNavigate={setSection}
         />
       )}
       {section === 'users'       && <UsersSection />}
