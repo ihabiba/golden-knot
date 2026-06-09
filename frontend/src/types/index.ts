@@ -259,6 +259,7 @@ export interface AdminStats {
   top_sellers: { store_name: string; orders: number; revenue: number }[];
   avg_order_value: number;
   email_verification_rate: number;
+  seller_count: number;
 }
 
 // ─── API Pagination ──────────────────────────────────────────────────────────

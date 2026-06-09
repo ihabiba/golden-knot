@@ -185,13 +185,21 @@ class RegisterView(generics.CreateAPIView):
     def perform_create(self, serializer):
         user = serializer.save()
         _send_verification_email(user)
+        if user.role == "seller":
+            from store.models import SellerProfile
+            SellerProfile.objects.get_or_create(
+                user=user,
+                defaults={"store_name": user.username, "status": "pending"},
+            )
 
 
 class UserViewSet(viewsets.ModelViewSet):
     serializer_class = UserSerializer
     permission_classes = [permissions.IsAuthenticated]
-    filter_backends = [filters.SearchFilter]
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ["email", "username"]
+    ordering_fields = ["created_at"]
+    ordering = ["-created_at"]
 
     def get_queryset(self):
         if self.request.user.role == "admin":
@@ -520,6 +528,7 @@ def admin_stats(request):
 
     avg_order_value = float(Order.objects.aggregate(avg=Avg("total_price"))["avg"] or 0)
     total_users = User.objects.count()
+    seller_count = User.objects.filter(role="seller").count()
     verified_users = User.objects.filter(is_email_verified=True).count()
     email_verification_rate = round(verified_users / total_users * 100, 1) if total_users else 0.0
 
@@ -558,6 +567,7 @@ def admin_stats(request):
         ],
         "avg_order_value": avg_order_value,
         "email_verification_rate": email_verification_rate,
+        "seller_count": seller_count,
     })
 
 

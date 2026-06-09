@@ -126,7 +126,7 @@ function OverviewSection({
       {/* ── Stat cards ──────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
         <StatCard icon={<Users size={18} />} value={userCount || '—'} label="Total Users" />
-        <StatCard icon={<Store size={18} />} value={sellerCount || '—'} label="Sellers" iconColor="#8b5cf6" />
+        <StatCard icon={<Store size={18} />} value={(stats?.seller_count ?? sellerCount) || '—'} label="Sellers" iconColor="#8b5cf6" />
         <StatCard icon={<Package size={18} />} value={productCount || '—'} label="Products" iconColor="#3b82f6" />
         <StatCard icon={<ShoppingBag size={18} />} value={orderCount || '—'} label="Orders" iconColor="#f59e0b" />
         <StatCard
@@ -419,6 +419,103 @@ function OverviewSection({
 
 // ─── Users Section ────────────────────────────────────────────────────────────
 
+function UserDetailModal({ user, onClose, onToggleActive, onRoleChange, updatingId }: {
+  user: User;
+  onClose: () => void;
+  onToggleActive: (u: User) => void;
+  onRoleChange: (u: User, role: UserRole) => void;
+  updatingId: number | null;
+}) {
+  const initials = user.username.slice(0, 2).toUpperCase();
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+        {/* Header */}
+        <div className="bg-[#1C1C1C] px-6 py-5 flex items-center gap-4">
+          <div className="w-14 h-14 rounded-full bg-[#C9A84C]/20 border-2 border-[#C9A84C]/40 flex items-center justify-center flex-shrink-0">
+            {user.avatar
+              ? <img src={user.avatar} alt={user.username} className="w-full h-full rounded-full object-cover" />
+              : <span className="text-[#C9A84C] font-bold text-lg">{initials}</span>
+            }
+          </div>
+          <div className="min-w-0">
+            <p className="text-white font-semibold text-base truncate">{user.username}</p>
+            <p className="text-gray-400 text-xs truncate">{user.email}</p>
+          </div>
+          <button onClick={onClose} className="ml-auto text-gray-400 hover:text-white transition-colors flex-shrink-0">
+            <X size={18} />
+          </button>
+        </div>
+        {/* Body */}
+        <div className="px-6 py-5 space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="bg-[#FAFAF8] rounded-xl p-3">
+              <p className="text-xs text-gray-400 mb-1">Role</p>
+              <span className={`text-xs font-semibold px-2 py-0.5 rounded-full capitalize ${
+                user.role === 'admin' ? 'bg-purple-100 text-purple-700' :
+                user.role === 'seller' ? 'bg-blue-100 text-blue-700' :
+                'bg-gray-100 text-gray-600'
+              }`}>{user.role}</span>
+            </div>
+            <div className="bg-[#FAFAF8] rounded-xl p-3">
+              <p className="text-xs text-gray-400 mb-1">Status</p>
+              <span className={`text-xs font-semibold flex items-center gap-1 ${user.is_active ? 'text-green-600' : 'text-red-500'}`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${user.is_active ? 'bg-green-500' : 'bg-red-400'}`} />
+                {user.is_active ? 'Active' : 'Suspended'}
+              </span>
+            </div>
+            <div className="bg-[#FAFAF8] rounded-xl p-3">
+              <p className="text-xs text-gray-400 mb-1">Email verified</p>
+              <span className={`text-xs font-semibold ${user.is_email_verified ? 'text-green-600' : 'text-yellow-600'}`}>
+                {user.is_email_verified ? '✓ Verified' : '✗ Not verified'}
+              </span>
+            </div>
+            <div className="bg-[#FAFAF8] rounded-xl p-3">
+              <p className="text-xs text-gray-400 mb-1">Joined</p>
+              <p className="text-xs font-medium text-[#1C1C1C]">
+                {new Date(user.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+              </p>
+            </div>
+            {user.phone && (
+              <div className="bg-[#FAFAF8] rounded-xl p-3 col-span-2">
+                <p className="text-xs text-gray-400 mb-1">Phone</p>
+                <p className="text-xs font-medium text-[#1C1C1C]">{user.phone}</p>
+              </div>
+            )}
+          </div>
+          {/* Actions */}
+          {user.role !== 'admin' && (
+            <div className="flex items-center gap-2 pt-1">
+              <div className="relative flex-1">
+                <select
+                  value={user.role}
+                  onChange={(e) => onRoleChange(user, e.target.value as UserRole)}
+                  className="w-full appearance-none text-xs font-medium px-3 py-2 pr-7 rounded-lg border border-gray-200 focus:outline-none focus:border-[#C9A84C] cursor-pointer capitalize bg-white"
+                >
+                  <option value="customer">Customer</option>
+                  <option value="seller">Seller</option>
+                  <option value="admin">Admin</option>
+                </select>
+                <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none opacity-50" />
+              </div>
+              <button
+                onClick={() => onToggleActive(user)}
+                disabled={updatingId === user.id}
+                className={`flex-1 text-xs font-medium px-3 py-2 rounded-lg border transition-colors disabled:opacity-40 ${
+                  user.is_active ? 'border-red-200 text-red-500 hover:bg-red-50' : 'border-green-200 text-green-600 hover:bg-green-50'
+                }`}
+              >
+                {updatingId === user.id ? <Loader2 size={12} className="animate-spin inline" /> : user.is_active ? 'Suspend' : 'Activate'}
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function UsersSection() {
   const [users, setUsers] = useState<User[]>([]);
   const [totalCount, setTotalCount] = useState(0);
@@ -427,6 +524,8 @@ function UsersSection() {
   const [roleFilter, setRoleFilter] = useState('all');
   const [userSearch, setUserSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [ordering, setOrdering] = useState<'-created_at' | 'created_at'>('-created_at');
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [roleChangeTarget, setRoleChangeTarget] = useState<{ user: User; newRole: UserRole } | null>(null);
   const [roleChanging, setRoleChanging] = useState(false);
   const [page, setPage] = useState(1);
@@ -438,19 +537,19 @@ function UsersSection() {
   }, [userSearch]);
 
   // Reset to page 1 when filters change
-  useEffect(() => setPage(1), [roleFilter, debouncedSearch]);
+  useEffect(() => setPage(1), [roleFilter, debouncedSearch, ordering]);
 
-  // Re-fetch from server on every filter/page change
+  // Re-fetch from server on every filter/page/sort change
   useEffect(() => {
     setLoading(true);
-    const params: Record<string, string | number> = { page };
+    const params: Record<string, string | number> = { page, ordering };
     if (debouncedSearch.trim()) params.search = debouncedSearch.trim();
     if (roleFilter !== 'all') params.role = roleFilter;
     getUsers(params)
       .then(({ data }) => { setUsers(data.results); setTotalCount(data.count); })
       .catch(() => toast.error('Failed to load users.'))
       .finally(() => setLoading(false));
-  }, [debouncedSearch, roleFilter, page]);
+  }, [debouncedSearch, roleFilter, page, ordering]);
 
   const paginated = users;
 
@@ -491,7 +590,9 @@ function UsersSection() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
-        <h2 className="font-display text-xl font-bold text-[#1C1C1C]">Users</h2>
+        <h2 className="font-display text-xl font-bold text-[#1C1C1C]">
+          Users <span className="text-sm font-normal text-gray-400 ml-1">{totalCount > 0 ? `(${totalCount})` : ''}</span>
+        </h2>
         <div className="flex items-center gap-2 flex-wrap">
           <input
             type="text"
@@ -511,6 +612,13 @@ function UsersSection() {
               {r === 'all' ? 'All' : r}
             </button>
           ))}
+          <button
+            onClick={() => setOrdering(o => o === '-created_at' ? 'created_at' : '-created_at')}
+            className="px-3 py-1.5 rounded-lg text-xs font-medium border border-gray-200 bg-white text-gray-600 hover:border-gray-400 transition-colors flex items-center gap-1"
+            title={ordering === '-created_at' ? 'Showing newest first' : 'Showing oldest first'}
+          >
+            {ordering === '-created_at' ? '↓ Newest' : '↑ Oldest'}
+          </button>
         </div>
       </div>
 
@@ -531,12 +639,16 @@ function UsersSection() {
               </thead>
               <tbody>
                 {paginated.map((user) => (
-                  <tr key={user.id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50/50">
+                  <tr
+                    key={user.id}
+                    onClick={() => setSelectedUser(user)}
+                    className="border-b border-gray-50 last:border-0 hover:bg-gray-50/50 cursor-pointer"
+                  >
                     <td className="px-5 py-3.5">
                       <p className="font-medium text-[#1C1C1C]">{user.username}</p>
                       <p className="text-xs text-gray-400">{user.email}</p>
                     </td>
-                    <td className="px-4 py-3.5 hidden sm:table-cell">
+                    <td className="px-4 py-3.5 hidden sm:table-cell" onClick={(e) => e.stopPropagation()}>
                       <div className="relative inline-block">
                         <select
                           value={user.role}
@@ -560,7 +672,7 @@ function UsersSection() {
                     <td className="px-4 py-3.5">
                       <StatusBadge status={user.is_active ? 'active' : 'inactive'} size="sm" showDot />
                     </td>
-                    <td className="px-5 py-3.5 text-right">
+                    <td className="px-5 py-3.5 text-right" onClick={(e) => e.stopPropagation()}>
                       <button
                         onClick={() => toggleActive(user)}
                         disabled={updatingId === user.id || user.role === 'admin'}
@@ -582,6 +694,16 @@ function UsersSection() {
           </div>
           <Paginator page={page} total={totalCount} onChange={setPage} />
         </div>
+      )}
+
+      {selectedUser && (
+        <UserDetailModal
+          user={selectedUser}
+          onClose={() => setSelectedUser(null)}
+          onToggleActive={(u) => { toggleActive(u); setSelectedUser(null); }}
+          onRoleChange={(u, role) => { handleRoleChange(u, role); setSelectedUser(null); }}
+          updatingId={updatingId}
+        />
       )}
 
       <ConfirmModal

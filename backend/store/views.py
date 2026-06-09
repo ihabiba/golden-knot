@@ -35,14 +35,11 @@ class SellerProfileViewSet(viewsets.ModelViewSet):
                 {"detail": "Authentication required."},
                 status=status.HTTP_401_UNAUTHORIZED,
             )
-        try:
-            profile = SellerProfile.objects.select_related("user").get(user=request.user)
-            return Response(SellerProfileSerializer(profile).data)
-        except SellerProfile.DoesNotExist:
-            return Response(
-                {"detail": "Seller profile not found."},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+        profile, _ = SellerProfile.objects.select_related("user").get_or_create(
+            user=request.user,
+            defaults={"store_name": request.user.username, "status": "pending"},
+        )
+        return Response(SellerProfileSerializer(profile).data)
 
     @action(detail=True, methods=["patch"])
     def approve(self, request, pk=None):
