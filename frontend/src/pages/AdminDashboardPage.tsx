@@ -726,12 +726,95 @@ function UsersSection() {
 
 // ─── Sellers Section ──────────────────────────────────────────────────────────
 
+function SellerDetailModal({ seller, onClose, onApprove, onReject, updatingId }: {
+  seller: SellerProfile;
+  onClose: () => void;
+  onApprove: (id: number) => void;
+  onReject: (id: number) => void;
+  updatingId: number | null;
+}) {
+  const bankEntries = Object.entries(seller.bank_account_details ?? {}).filter(([, v]) => v);
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+        <div className="bg-[#1C1C1C] px-6 py-5 flex items-center gap-4">
+          <div className="w-12 h-12 rounded-xl bg-[#C9A84C]/20 border border-[#C9A84C]/30 flex items-center justify-center shrink-0">
+            <Store size={20} className="text-[#C9A84C]" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-white font-semibold truncate">{seller.store_name || seller.user_username}</p>
+            <p className="text-gray-400 text-xs truncate">{seller.user_email}</p>
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors shrink-0"><X size={18} /></button>
+        </div>
+        <div className="px-6 py-5 space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="bg-[#FAFAF8] rounded-xl p-3">
+              <p className="text-xs text-gray-400 mb-1.5">Status</p>
+              <StatusBadge status={seller.status} size="sm" showDot />
+            </div>
+            <div className="bg-[#FAFAF8] rounded-xl p-3">
+              <p className="text-xs text-gray-400 mb-1">Location</p>
+              <p className="text-xs font-medium text-[#1C1C1C]">{seller.location || '—'}</p>
+            </div>
+          </div>
+          {seller.bio ? (
+            <div className="bg-[#FAFAF8] rounded-xl p-3">
+              <p className="text-xs text-gray-400 mb-1">Bio</p>
+              <p className="text-xs text-gray-600 line-clamp-3">{seller.bio}</p>
+            </div>
+          ) : null}
+          {bankEntries.length > 0 && (
+            <div className="bg-[#FAFAF8] rounded-xl p-3">
+              <p className="text-xs text-gray-400 mb-2">Bank Details</p>
+              <div className="space-y-1">
+                {bankEntries.map(([k, v]) => (
+                  <div key={k} className="flex justify-between text-xs">
+                    <span className="text-gray-500 capitalize">{k.replace(/_/g, ' ')}</span>
+                    <span className="font-medium text-[#1C1C1C]">{String(v)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          <div className="flex gap-2 pt-1">
+            {seller.status === 'pending' && (<>
+              <button onClick={() => onApprove(seller.id)} disabled={updatingId === seller.id}
+                className="flex-1 flex items-center justify-center gap-1.5 bg-green-500 hover:bg-green-600 text-white text-xs font-semibold py-2.5 rounded-xl transition-colors disabled:opacity-50">
+                {updatingId === seller.id ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle2 size={12} />} Approve
+              </button>
+              <button onClick={() => onReject(seller.id)} disabled={updatingId === seller.id}
+                className="flex-1 flex items-center justify-center gap-1.5 border border-red-200 text-red-500 hover:bg-red-50 text-xs font-semibold py-2.5 rounded-xl transition-colors disabled:opacity-50">
+                <XCircle size={12} /> Reject
+              </button>
+            </>)}
+            {seller.status === 'approved' && (
+              <button onClick={() => onReject(seller.id)} disabled={updatingId === seller.id}
+                className="flex-1 border border-red-200 text-red-500 hover:bg-red-50 text-xs font-semibold py-2.5 rounded-xl transition-colors disabled:opacity-50">
+                {updatingId === seller.id ? <Loader2 size={12} className="animate-spin inline" /> : 'Suspend Seller'}
+              </button>
+            )}
+            {seller.status === 'suspended' && (
+              <button onClick={() => onApprove(seller.id)} disabled={updatingId === seller.id}
+                className="flex-1 border border-green-200 text-green-600 hover:bg-green-50 text-xs font-semibold py-2.5 rounded-xl transition-colors disabled:opacity-50">
+                {updatingId === seller.id ? <Loader2 size={12} className="animate-spin inline" /> : 'Reinstate Seller'}
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function SellersSection() {
   const [sellers, setSellers] = useState<SellerProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('all');
   const [updatingId, setUpdatingId] = useState<number | null>(null);
   const [page, setPage] = useState(1);
+  const [selectedSeller, setSelectedSeller] = useState<SellerProfile | null>(null);
 
   useEffect(() => {
     getAllSellers()
@@ -812,7 +895,7 @@ function SellersSection() {
               </thead>
               <tbody>
                 {paginated.map((seller) => (
-                  <tr key={seller.id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50/50">
+                  <tr key={seller.id} onClick={() => setSelectedSeller(seller)} className="border-b border-gray-50 last:border-0 hover:bg-gray-50/50 cursor-pointer">
                     <td className="px-5 py-3.5">
                       <p className="font-medium text-[#1C1C1C]">{seller.user_username}</p>
                       <p className="text-xs text-gray-400">{seller.user_email}</p>
@@ -824,7 +907,7 @@ function SellersSection() {
                     <td className="px-4 py-3.5">
                       <StatusBadge status={seller.status} size="sm" showDot />
                     </td>
-                    <td className="px-5 py-3.5 text-right">
+                    <td className="px-5 py-3.5 text-right" onClick={(e) => e.stopPropagation()}>
                       {seller.status === 'pending' && (
                         <div className="flex items-center justify-end gap-2">
                           <button
@@ -871,11 +954,95 @@ function SellersSection() {
           <Paginator page={page} total={filtered.length} onChange={setPage} />
         </div>
       )}
+
+      {selectedSeller && (
+        <SellerDetailModal
+          seller={selectedSeller}
+          onClose={() => setSelectedSeller(null)}
+          onApprove={(id) => { handleApprove(id); setSelectedSeller(null); }}
+          onReject={(id) => { handleReject(id); setSelectedSeller(null); }}
+          updatingId={updatingId}
+        />
+      )}
     </div>
   );
 }
 
 // ─── Products Section ─────────────────────────────────────────────────────────
+
+function ProductDetailModal({ product, onClose, onApprove, onRevoke, updatingSlug }: {
+  product: Product;
+  onClose: () => void;
+  onApprove: (slug: string) => void;
+  onRevoke: (p: Product) => void;
+  updatingSlug: string | null;
+}) {
+  const primaryImage = product.images?.find((i) => i.is_primary)?.image ?? product.images?.[0]?.image;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden max-h-[90vh] flex flex-col">
+        <div className="bg-[#1C1C1C] px-6 py-4 flex items-center gap-3 shrink-0">
+          <div className="flex-1 min-w-0">
+            <p className="text-white font-semibold truncate">{product.name}</p>
+            <p className="text-gray-400 text-xs">{product.category_name} · by {product.seller_name}</p>
+          </div>
+          <StatusBadge status={product.is_approved ? 'approved' : 'unapproved'} size="sm" />
+          <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors shrink-0 ml-1"><X size={18} /></button>
+        </div>
+        <div className="overflow-y-auto flex-1 px-6 py-5 space-y-4">
+          {primaryImage && (
+            <img src={primaryImage} alt={product.name} className="w-full h-48 object-cover rounded-xl" />
+          )}
+          <div className="grid grid-cols-3 gap-3">
+            <div className="bg-[#FAFAF8] rounded-xl p-3 text-center">
+              <p className="text-xs text-gray-400 mb-1">Price</p>
+              <p className="text-sm font-bold text-[#C9A84C]">${parseFloat(product.price).toFixed(2)}</p>
+            </div>
+            <div className="bg-[#FAFAF8] rounded-xl p-3 text-center">
+              <p className="text-xs text-gray-400 mb-1">Stock</p>
+              <p className="text-sm font-bold text-[#1C1C1C]">{product.stock}</p>
+            </div>
+            <div className="bg-[#FAFAF8] rounded-xl p-3 text-center">
+              <p className="text-xs text-gray-400 mb-1">Reviews</p>
+              <p className="text-sm font-bold text-[#1C1C1C]">{product.review_count}</p>
+            </div>
+          </div>
+          {product.location && (
+            <div className="bg-[#FAFAF8] rounded-xl p-3">
+              <p className="text-xs text-gray-400 mb-1">Location</p>
+              <p className="text-xs text-[#1C1C1C]">{product.location}</p>
+            </div>
+          )}
+          {product.description && (
+            <div className="bg-[#FAFAF8] rounded-xl p-3">
+              <p className="text-xs text-gray-400 mb-1">Description</p>
+              <p className="text-xs text-gray-600 leading-relaxed line-clamp-4">{product.description}</p>
+            </div>
+          )}
+          {product.rejection_reason && (
+            <div className="bg-red-50 border border-red-100 rounded-xl p-3">
+              <p className="text-xs font-medium text-red-600 mb-1">Rejection reason</p>
+              <p className="text-xs text-red-500">{product.rejection_reason}</p>
+            </div>
+          )}
+          <div className="flex gap-2 pt-1">
+            {!product.is_approved ? (
+              <button onClick={() => onApprove(product.slug)} disabled={updatingSlug === product.slug}
+                className="flex-1 flex items-center justify-center gap-1.5 bg-green-500 hover:bg-green-600 text-white text-xs font-semibold py-2.5 rounded-xl transition-colors disabled:opacity-50">
+                {updatingSlug === product.slug ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle2 size={12} />} Approve
+              </button>
+            ) : null}
+            <button onClick={() => onRevoke(product)} disabled={updatingSlug === product.slug}
+              className="flex-1 flex items-center justify-center gap-1.5 border border-red-200 text-red-500 hover:bg-red-50 text-xs font-semibold py-2.5 rounded-xl transition-colors disabled:opacity-50">
+              <XCircle size={12} /> {product.is_approved ? 'Revoke' : 'Reject'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function AdminProductsSection() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -886,6 +1053,7 @@ function AdminProductsSection() {
   const [rejectReason, setRejectReason] = useState('');
   const [rejecting, setRejecting] = useState(false);
   const [page, setPage] = useState(1);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
   useEffect(() => {
     getProducts()
@@ -977,7 +1145,7 @@ function AdminProductsSection() {
               </thead>
               <tbody>
                 {paginated.map((product) => (
-                  <tr key={product.id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50/50">
+                  <tr key={product.id} onClick={() => setSelectedProduct(product)} className="border-b border-gray-50 last:border-0 hover:bg-gray-50/50 cursor-pointer">
                     <td className="px-5 py-3.5">
                       <p className="font-medium text-[#1C1C1C] line-clamp-1">{product.name}</p>
                       <p className="text-xs text-gray-400">{product.category_name}</p>
@@ -989,7 +1157,7 @@ function AdminProductsSection() {
                     <td className="px-4 py-3.5">
                       <StatusBadge status={product.is_approved ? 'approved' : 'unapproved'} size="sm" />
                     </td>
-                    <td className="px-5 py-3.5 text-right">
+                    <td className="px-5 py-3.5 text-right" onClick={(e) => e.stopPropagation()}>
                       {!product.is_approved ? (
                         <div className="flex items-center justify-end gap-2">
                           <button
@@ -1071,11 +1239,131 @@ function AdminProductsSection() {
           </div>
         </div>
       )}
+
+      {selectedProduct && (
+        <ProductDetailModal
+          product={selectedProduct}
+          onClose={() => setSelectedProduct(null)}
+          onApprove={(slug) => { handleApprove(slug); setSelectedProduct(null); }}
+          onRevoke={(p) => { setSelectedProduct(null); openRejectModal(p); }}
+          updatingSlug={updatingSlug}
+        />
+      )}
     </div>
   );
 }
 
 // ─── Orders Section ───────────────────────────────────────────────────────────
+
+function OrderDetailModal({ order, onClose, onStatusUpdate, updatingId }: {
+  order: Order;
+  onClose: () => void;
+  onStatusUpdate: (id: number, status: string) => void;
+  updatingId: number | null;
+}) {
+  const addr = order.shipping_address;
+  const initials = (order.customer_username ?? 'U').slice(0, 2).toUpperCase();
+  const subtotal = order.items.reduce((s, i) => s + parseFloat(i.subtotal), 0);
+  const discount = parseFloat(order.discount_amount ?? '0');
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden max-h-[90vh] flex flex-col">
+        {/* Header */}
+        <div className="bg-[#1C1C1C] px-6 py-4 flex items-center gap-3 shrink-0">
+          <div className="flex-1 min-w-0">
+            <p className="text-white font-semibold">Order #{order.id}</p>
+            <p className="text-gray-400 text-xs">
+              {new Date(order.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+            </p>
+          </div>
+          <StatusBadge status={order.status} size="sm" />
+          <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors shrink-0 ml-1"><X size={18} /></button>
+        </div>
+        <div className="overflow-y-auto flex-1 px-6 py-5 space-y-4">
+          {/* Customer */}
+          <div className="bg-[#FAFAF8] rounded-xl p-3 flex items-center gap-3">
+            <div className="w-9 h-9 rounded-full bg-[#C9A84C]/20 flex items-center justify-center shrink-0">
+              {order.customer_avatar
+                ? <img src={order.customer_avatar} alt="" className="w-full h-full rounded-full object-cover" />
+                : <span className="text-xs font-bold text-[#C9A84C]">{initials}</span>
+              }
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-[#1C1C1C] truncate">{order.customer_username}</p>
+              <p className="text-xs text-gray-400 truncate">{order.customer_email}</p>
+            </div>
+          </div>
+          {/* Items */}
+          <div>
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Items</p>
+            <div className="bg-[#FAFAF8] rounded-xl divide-y divide-gray-100">
+              {order.items.map((item) => (
+                <div key={item.id} className="flex items-center justify-between px-3 py-2.5">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium text-[#1C1C1C] truncate">{item.product_name}</p>
+                    <p className="text-xs text-gray-400">by {item.seller_name} · qty {item.quantity}</p>
+                  </div>
+                  <p className="text-xs font-semibold text-[#1C1C1C] shrink-0 ml-3">${parseFloat(item.subtotal).toFixed(2)}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+          {/* Totals */}
+          <div className="bg-[#FAFAF8] rounded-xl p-3 space-y-1.5">
+            <div className="flex justify-between text-xs text-gray-500">
+              <span>Subtotal</span><span>${subtotal.toFixed(2)}</span>
+            </div>
+            {discount > 0 && (
+              <div className="flex justify-between text-xs text-green-600">
+                <span>Discount</span><span>−${discount.toFixed(2)}</span>
+              </div>
+            )}
+            <div className="flex justify-between text-sm font-bold text-[#1C1C1C] pt-1 border-t border-gray-200">
+              <span>Total</span><span>${parseFloat(order.total_price).toFixed(2)}</span>
+            </div>
+          </div>
+          {/* Shipping address */}
+          {addr && (
+            <div className="bg-[#FAFAF8] rounded-xl p-3">
+              <p className="text-xs text-gray-400 mb-1">Shipping address</p>
+              <p className="text-xs text-[#1C1C1C] leading-relaxed">
+                {addr.full_name}<br />
+                {addr.address_line1}{addr.address_line2 ? `, ${addr.address_line2}` : ''}<br />
+                {addr.city}, {addr.country} {addr.postal_code}<br />
+                {addr.phone}
+              </p>
+            </div>
+          )}
+          {/* Tracking */}
+          {order.tracking_number && (
+            <div className="bg-[#FAFAF8] rounded-xl p-3">
+              <p className="text-xs text-gray-400 mb-1">Tracking</p>
+              <p className="text-xs font-medium text-[#1C1C1C]">{order.shipping_carrier} · {order.tracking_number}</p>
+            </div>
+          )}
+          {/* Status update */}
+          <div>
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Update status</p>
+            <div className="relative">
+              <select
+                value={order.status}
+                disabled={updatingId === order.id}
+                onChange={(e) => { onStatusUpdate(order.id, e.target.value); onClose(); }}
+                className="w-full appearance-none bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-[#1C1C1C] focus:outline-none focus:border-[#C9A84C] cursor-pointer disabled:opacity-50"
+              >
+                {ORDER_STATUSES.map((s) => (
+                  <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
+                ))}
+              </select>
+              <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function AdminOrdersSection() {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -1083,6 +1371,7 @@ function AdminOrdersSection() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [updatingId, setUpdatingId] = useState<number | null>(null);
   const [page, setPage] = useState(1);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
   useEffect(() => {
     getOrders()
@@ -1161,7 +1450,7 @@ function AdminOrdersSection() {
               </thead>
               <tbody>
                 {paginated.map((order) => (
-                  <tr key={order.id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50/50">
+                  <tr key={order.id} onClick={() => setSelectedOrder(order)} className="border-b border-gray-50 last:border-0 hover:bg-gray-50/50 cursor-pointer">
                     <td className="px-5 py-3.5">
                       <p className="font-medium text-[#1C1C1C]">{order.customer_username ?? `User #${order.customer}`}</p>
                       <p className="text-xs text-gray-400">
@@ -1181,7 +1470,7 @@ function AdminOrdersSection() {
                     <td className="px-4 py-3.5">
                       <StatusBadge status={order.status} size="sm" />
                     </td>
-                    <td className="px-5 py-3.5 text-right">
+                    <td className="px-5 py-3.5 text-right" onClick={(e) => e.stopPropagation()}>
                       <div className="relative inline-block">
                         <select
                           value={order.status}
@@ -1203,6 +1492,15 @@ function AdminOrdersSection() {
           </div>
           <Paginator page={page} total={filtered.length} onChange={setPage} />
         </div>
+      )}
+
+      {selectedOrder && (
+        <OrderDetailModal
+          order={selectedOrder}
+          onClose={() => setSelectedOrder(null)}
+          onStatusUpdate={(id, status) => { handleStatusUpdate(id, status); }}
+          updatingId={updatingId}
+        />
       )}
     </div>
   );
