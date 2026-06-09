@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import {
   ComposedChart, Area, Bar, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, PieChart, Pie, Cell,
@@ -1925,6 +1925,21 @@ export default function AdminDashboardPage() {
       setStats(st.data);
     }).catch(() => {});
   }, [isAuthenticated, user, navigate]);
+
+  // Re-fetch sellers/products for the overview pending counts whenever the admin
+  // navigates back to the overview section (skips the initial mount since the main
+  // effect already loaded everything).
+  const overviewMounted = useRef(false);
+  useEffect(() => {
+    if (!overviewMounted.current) { overviewMounted.current = true; return; }
+    if (section !== 'overview') return;
+    Promise.all([getAllSellers(), getProducts()]).then(([s, p]) => {
+      setSellers(s.data.results);
+      setSellerCount(s.data.count);
+      setProducts(p.data.results);
+      setProductCount(p.data.count);
+    }).catch(() => {});
+  }, [section]);
 
   if (!isAuthenticated) return null;
 

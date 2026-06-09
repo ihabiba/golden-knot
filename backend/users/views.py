@@ -187,10 +187,19 @@ class RegisterView(generics.CreateAPIView):
         _send_verification_email(user)
         if user.role == "seller":
             from store.models import SellerProfile
+            from notifications.models import Notification
             SellerProfile.objects.get_or_create(
                 user=user,
                 defaults={"store_name": user.username, "status": "pending"},
             )
+            for admin in User.objects.filter(role="admin"):
+                Notification.objects.create(
+                    recipient=admin,
+                    notif_type="announcement",
+                    title=f"New seller registration: {user.username}",
+                    body=f"{user.username} ({user.email}) has registered as a seller and is awaiting your approval.",
+                    data={"seller_user_id": user.id},
+                )
 
 
 class UserViewSet(viewsets.ModelViewSet):

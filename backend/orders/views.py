@@ -111,6 +111,12 @@ class OrderViewSet(viewsets.ModelViewSet):
                     f"Order #{order.id} · {summary} · Your order has been cancelled. Contact support if this was unexpected.",
                     {"order_id": order.id},
                 )
+                # Restore stock for each cancelled item
+                from products.models import Product
+                for item in all_items:
+                    Product.objects.filter(pk=item.product_id).update(
+                        stock=F("stock") + item.quantity
+                    )
                 seen_sellers: set = set()
                 for item in all_items:
                     if item.seller_id not in seen_sellers:
@@ -185,6 +191,23 @@ class OrderViewSet(viewsets.ModelViewSet):
         total = max(subtotal - discount_amount, Decimal("0.00"))
 
         with transaction.atomic():
+            from products.models import Product
+
+            # Lock product rows to prevent overselling under concurrent checkouts
+            product_ids = [item.product_id for item in cart_items]
+            products_locked = {
+                p.pk: p
+                for p in Product.objects.select_for_update().filter(pk__in=product_ids)
+            }
+
+            for item in cart_items:
+                product = products_locked[item.product_id]
+                if product.stock < item.quantity:
+                    return Response(
+                        {"detail": f"'{product.name}' only has {product.stock} unit(s) left in stock."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+
             order = Order.objects.create(
                 customer=request.user,
                 shipping_address=shipping_address,
@@ -205,6 +228,12 @@ class OrderViewSet(viewsets.ModelViewSet):
                 )
                 for item in cart_items
             ])
+
+            # Decrement stock atomically
+            for item in cart_items:
+                Product.objects.filter(pk=item.product_id).update(
+                    stock=F("stock") - item.quantity
+                )
 
             if promo_code_id:
                 PromoCode.objects.filter(pk=promo_code_id).update(
