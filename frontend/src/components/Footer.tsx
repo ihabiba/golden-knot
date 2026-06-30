@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Mail, MapPin, Heart } from 'lucide-react';
+import { Mail, MapPin } from 'lucide-react';
 
 const quickLinks = [
   { label: 'About Us', to: '/about' },
@@ -122,7 +122,7 @@ export default function Footer() {
             &copy; {new Date().getFullYear()} Golden Knot. All rights reserved.
           </p>
           <p className="text-gray-600 text-sm">
-            Built with <Heart size={13} className="inline text-[#C9A84C] fill-[#C9A84C] mx-0.5 -translate-y-px" /> by{' '}
+            Built by{' '}
             <a
               href="https://github.com/ihabiba"
               target="_blank"
